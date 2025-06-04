@@ -1,909 +1,864 @@
-/* --- Global Styles & Font Import --- */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+/* ---------------------------------------------------
+   Clearpoint AV Quoting Tool - Branded, Consistent, Responsive Stylesheet
+   Font: Montserrat, Colors & Buttons match clearpointtechdesign.com
+------------------------------------------------------*/
+
+/* --- Font & Variables --- */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 
 :root {
-    --clearpoint-dark-blue: #003366;
-    --clearpoint-primary-blue: #0059b3;
-    --clearpoint-light-blue: #e6f0ff;
-    --text-color: #333;
-    --text-light: #555;
-    --border-color: #dee2e6;
-    --background-light-grey: #f4f7f9;
-    --background-white: #ffffff;
-    --success-green: #28a745;
-    --danger-red: #dc3545;
-    --warning-yellow: #ffc107;
-    --ai-purple: #6f42c1;
-    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --border-radius: 6px;
+    --cp-dark-blue: #003366;
+    --cp-mid-blue: #0059b3;
+    --cp-light-blue: #e6f0ff;
+    --cp-accent-blue: #00b1e1;
+    --cp-green: #28a745;
+    --cp-orange: #f39c12;
+    --cp-red: #dc3545;
+    --white: #fff;
+    --light-grey: #f8fafc;
+    --border-radius: 10px;
+    --shadow: 0 8px 36px rgba(0,89,179,0.08);
+    --input-shadow: 0 1px 3px rgba(0, 89, 179, 0.05);
+    --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+    --section-max-width: 1000px;
+    --font: 'Montserrat', sans-serif;
 }
 
 body {
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font);
+    background: var(--light-grey);
+    color: var(--cp-dark-blue);
     margin: 0;
     padding: 0;
-    background-color: var(--background-light-grey);
-    color: var(--text-color);
-    line-height: 1.6;
-    font-size: 16px;
-    overflow-x: hidden; /* Prevent horizontal scrollbar if sidebar pokes out before JS loads */
+    min-height: 100vh;
 }
 
 /* --- Header --- */
 header {
-    background-color: var(--clearpoint-dark-blue);
-    color: var(--background-white);
-    padding: 1.5rem 2rem;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    position: relative; /* For positioning logout button */
+    background: var(--cp-dark-blue);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 80px;
+    box-shadow: 0 2px 8px rgba(0,89,179,0.09);
 }
-
+header img {
+    height: 58px;
+    margin-right: 18px;
+}
 header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
     margin: 0;
-    font-size: 1.75rem;
-    font-weight: 600;
 }
-
-/* --- Main Content & Sections --- */
-main {
-    padding: 25px;
-    max-width: 1300px;
-    margin: 30px auto;
-    transition: margin-left 0.3s ease-in-out; /* For content push */
-}
-
-section {
-    background-color: var(--background-white);
-    padding: 25px;
-    margin-bottom: 30px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-}
-
-h2 {
-    color: var(--clearpoint-dark-blue);
-    border-bottom: 2px solid var(--clearpoint-primary-blue);
-    padding-bottom: 0.6rem;
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-    font-weight: 600;
-}
-
-h3 {
-    color: var(--clearpoint-dark-blue);
-    font-size: 1.3rem;
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-
-
-/* --- Form Elements (Buttons, Select, Inputs, Textareas) --- */
-input[type="file"],
-select,
-button,
-input[type="text"],
-input[type="number"],
-textarea {
-    padding: 10px 12px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    font-family: 'Montserrat', sans-serif;
-    transition: all 0.2s ease-in-out;
-    vertical-align: middle;
-    box-sizing: border-box;
-    width: 100%; /* General rule, more specific rules will override for certain elements */
-}
-
-button {
-    padding: 10px 18px;
-    width: auto; /* Default for most buttons to size to content */
-}
-input[type="number"] { width: auto; }
-
-
-select {
-    background-color: var(--background-white);
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230059B3%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22%2F%3E%3C%2Fsvg%3E');
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 0.8em;
-    padding-right: 2.5rem; /* Space for the dropdown arrow */
-}
-
-
-select:focus,
-input[type="text"]:focus,
-input[type="number"]:focus,
-textarea:focus {
-    border-color: var(--clearpoint-primary-blue);
-    box-shadow: 0 0 0 0.2rem rgba(0, 89, 179, 0.25);
-    outline: none;
-}
-
-button { /* General button styling */
-    background-color: var(--clearpoint-primary-blue);
-    color: white;
-    cursor: pointer;
-    font-weight: 500;
-    border: 1px solid var(--clearpoint-primary-blue);
-}
-
-button:hover:not(:disabled) {
-    background-color: var(--clearpoint-dark-blue);
-    border-color: var(--clearpoint-dark-blue);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-button:disabled {
-    background-color: #cccccc;
-    border-color: #cccccc;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-#refreshDataBtn {
-    background-color: var(--success-green);
-    border-color: var(--success-green);
-    margin-left: 10px;
-}
-#refreshDataBtn:hover:not(:disabled) {
-    background-color: #1e7e34;
-    border-color: #1e7e34;
-}
-
-/* --- View Navigation Tabs --- */
-.view-navigation-tabs {
-    display: flex;
-    margin-bottom: 25px;
-    border-bottom: 2px solid var(--border-color);
-    align-items: center;
-}
-
-.view-nav-button {
-    padding: 12px 20px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    cursor: pointer;
+#logoutButton {
+    background: var(--cp-red);
+    color: var(--white);
     border: none;
-    border-bottom: 3px solid transparent;
-    background-color: transparent;
-    color: var(--text-light);
-    margin-right: 5px;
-    margin-bottom: -2px;
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
-    transition: color 0.2s ease, border-bottom-color 0.2s ease, background-color 0.2s ease;
-}
-
-.view-nav-button:hover {
-    color: var(--clearpoint-primary-blue);
-    background-color: var(--clearpoint-light-blue);
-    transform: none;
-    box-shadow: none;
-    border-bottom: 3px solid var(--clearpoint-primary-blue);
-}
-
-.view-nav-button.active {
-    color: var(--clearpoint-primary-blue);
-    border-bottom: 3px solid var(--clearpoint-primary-blue);
-    background-color: var(--background-white);
-    border-left: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-color);
-    border-top: 1px solid var(--border-color);
-}
-
-#toggleLoadQuoteSidebarBtn {
-    /* Already styled as view-nav-button, specific overrides if needed */
-}
-#toggleLoadQuoteSidebarBtn:hover {
-    /* Consistent hover with other nav buttons or specific */
-}
-
-
-.view-container {
-    display: none;
-}
-
-.view-container.active-view {
-    display: block;
-}
-
-
-/* --- Project Info Section Styling --- */
-#project-info div { /* General div inside project-info */
-    /* display: flex; /* Be careful if this was for specific divs only */
-    /* flex-direction: column; */
-    /* gap: 8px; */
-}
-
-#project-info label {
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 1rem;
     font-weight: 600;
-    color: var(--text-color);
-    font-size: 0.95rem;
-    margin-bottom: 0; /* Let gap or specific margins handle it */
+    cursor: pointer;
+    margin-left: 24px;
+    transition: background var(--transition);
+}
+#logoutButton:hover { background: #b91d2b; }
+
+@media (max-width:700px) {
+    header { flex-direction: column; height: auto; padding: 1em; }
+    header h1 { font-size: 1.2rem; margin-bottom: 8px; }
 }
 
-.status-selector-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 15px;
-    margin-bottom: 10px; /* Removed default bottom margin from general inputs/selects for this row */
-}
-
-.status-selector-container label {
-    margin-bottom: 0; /* Override general label margin if any */
-    margin-right: 5px; /* Small space if gap isn't enough or not supported everywhere */
-}
-
-#quoteStatusSelector {
-    width: auto !important; /* Force auto width */
-    min-width: 180px; /* Give it some reasonable minimum space */
-    padding: 8px 12px;
-    padding-right: 2.5rem; /* For arrow */
-    font-size: 0.9rem;
-    margin-bottom: 0; /* Handled by container's gap */
-    flex-grow: 0;
-    flex-shrink: 0;
-}
-
-#updateStatusBtn {
-    padding: 6px 12px !important;
-    font-size: 0.85rem !important;
-    width: auto !important;
-    min-width: 100px; /* Give it a reasonable minimum */
-    margin-left: 0 !important; /* Handled by container's gap */
-    margin-bottom: 0 !important;
-    vertical-align: middle;
-    flex-grow: 0;
-    flex-shrink: 0;
-}
-
-
-/* --- Item Selector & Preview --- */
-#item-selector {
+/* --- Floating Action Bar (right) --- */
+#floatingActionBar {
+    position: fixed;
+    right: 32px;
+    top: 120px;
+    z-index: 100;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
 }
-
-#item-selector .search-controls-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 5px;
-}
-
-#productSearchInput {
-    flex: 2 1 250px;
-    min-width: 200px;
-    margin-bottom: 0;
-}
-
-#brandFilterDropdown {
-    flex: 1 1 200px;
-    min-width: 180px;
-    margin-bottom: 0;
-}
-
-#item-selector .product-dropdown-container {
-    width: 100%;
-    margin-bottom: 5px;
-}
-
-#item-selector select#productDropdown {
-    width: 100%;
-    margin-bottom: 0;
-}
-
-#item-selector p#dataLoadStatus {
-    width: 100%;
-    margin: 5px 0 0 0;
-    font-style: italic;
-    color: var(--text-light);
-    text-align: left;
-    font-size: 0.9rem;
-}
-
-#addSuccessNotification {
-    width: 100%;
-    padding: 8px 12px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    background-color: var(--clearpoint-light-blue);
-    color: var(--clearpoint-dark-blue);
-    border: 1px solid var(--clearpoint-primary-blue);
-    border-radius: var(--border-radius);
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out, height 0.3s ease-in-out;
-    height: 0;
-    overflow: hidden;
-}
-#addSuccessNotification.visible {
-    opacity: 1;
-    height: auto;
-    padding-top: 8px;
-    padding-bottom: 8px;
-}
-
-#item-selector .item-selector-actions {
-    width: 100%;
-    display: flex;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-top: 10px;
-}
-#item-selector .item-selector-actions button {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-#item-preview {
-    background-color: var(--clearpoint-light-blue);
-    border-left: 5px solid var(--clearpoint-primary-blue);
-    padding: 20px;
-    overflow: hidden;
-}
-#previewArea h3 {
-    margin-top: 0;
-    color: var(--clearpoint-dark-blue);
-    font-size: 1.3rem;
-    font-weight: 600;
-}
-#previewArea img {
-    max-width: 180px;
-    max-height: 180px;
-    float: right;
-    margin-left: 20px;
-    margin-bottom: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--background-white);
-    padding: 5px;
-}
-#previewArea p { margin: 0.6em 0; color: var(--text-light); }
-#previewArea p strong { color: var(--text-color); font-weight: 600; }
-#previewArea a { color: var(--clearpoint-primary-blue); text-decoration: none; font-weight: 500; }
-#previewArea a:hover { text-decoration: underline; }
-
-/* --- Scope of Work (SOW) Styling --- */
-.sow-project-info {
-    font-size: 1rem;
-    color: var(--text-light);
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-left: 3px solid var(--clearpoint-dark-blue);
-    border-radius: 0 var(--border-radius) var(--border-radius) 0;
-}
-.sow-project-info strong {
-    color: var(--clearpoint-dark-blue);
-}
-
-#sowAiPromptSection {
-    background-color: #f0f5fb;
-    padding: 15px;
-    border-radius: var(--border-radius);
-    margin-bottom: 0;
-    border: 1px solid var(--clearpoint-light-blue);
-}
-#sowAiPromptSection label {
-    display: block;
-    font-weight: 600;
-    color: var(--clearpoint-dark-blue);
-    margin-bottom: 8px;
-    font-size: 1rem;
-}
-
-#sowAiPromptSection .sow-prompt-controls {
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--background-white);
-    margin-bottom: 10px;
-    box-sizing: border-box;
-}
-#sowAiPromptSection .sow-prompt-controls:focus-within {
-    border-color: var(--clearpoint-primary-blue);
-    box-shadow: 0 0 0 0.2rem rgba(0, 89, 179, 0.25);
-}
-
-#sowAiPromptSection .sow-prompt-controls #sowAiPromptText {
-    flex-grow: 1;
-    margin: 0;
+.brand-action-btn {
+    font-family: var(--font);
     border: none;
-    padding: 10px 12px;
-    background-color: transparent;
-    box-shadow: none;
-    border-radius: 0;
-    min-height: 60px;
-    line-height: 1.5;
-    resize: vertical;
-}
-#sowAiPromptSection .sow-prompt-controls #sowAiPromptText:focus {
-    box-shadow: none;
+    border-radius: var(--border-radius);
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 12px 26px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
     outline: none;
 }
+.brand-action-btn:hover { filter: brightness(1.08); transform: translateY(-2px) scale(1.04); }
+@media (max-width:900px) {
+    #floatingActionBar { right: 10px; }
+}
 
-button.mic-button {
-    flex-shrink: 0;
-    padding: 0 10px;
-    background-color: transparent;
+/* --- Sidebar for Loading Quotes/Templates --- */
+#loadQuoteSidebar {
+    font-family: var(--font);
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    width: 370px;
+    background: #fff;
+    box-shadow: 2px 0 14px rgba(0,0,0,0.12);
+    z-index: 110;
+    padding: 32px 26px 24px 26px;
+    overflow-y: auto;
+}
+#loadQuoteSidebar h3, #loadQuoteSidebar h4 {
+    margin-top: 0;
+    color: var(--cp-mid-blue);
+    font-weight: 700;
+}
+#closeLoadQuoteSidebarBtn {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none;
     border: none;
-    border-left: 1px solid var(--border-color);
-    color: var(--text-light);
+    font-size: 2rem;
+    color: var(--cp-dark-blue);
     cursor: pointer;
+}
+#templateList, #savedQuotesList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+#templateList li, #savedQuotesList li {
+    padding: 9px 0;
+    border-bottom: 1px solid #e4e9ef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.01rem;
+}
+#templateList li:last-child, #savedQuotesList li:last-child { border-bottom: none; }
+@media (max-width:500px) {
+    #loadQuoteSidebar { width: 96vw; padding: 16px 12px; }
+}
+
+/* --- Login --- */
+.login-container {
+    max-width: 380px;
+    margin: 70px auto;
+    background: #fff;
+    box-shadow: var(--shadow);
+    border-radius: 12px;
+    padding: 40px;
+}
+.login-container h2 {
+    color: var(--cp-dark-blue);
+    font-weight: 700;
+    font-size: 1.38rem;
+    margin-bottom: 2em;
+}
+.login-container label { font-weight: 600; color: var(--cp-dark-blue);}
+.login-container input {
+    font-family: var(--font);
+    width: 100%;
+    padding: 13px 12px;
+    border-radius: 6px;
+    border: 1px solid #c7d2e4;
+    margin-bottom: 16px;
+    font-size: 1.01rem;
+    background: #f7fafd;
+    box-shadow: var(--input-shadow);
+    transition: border var(--transition), box-shadow var(--transition);
+}
+.login-container input:focus { border: 1.5px solid var(--cp-mid-blue); background: #fff; }
+.login-container button {
+    background: var(--cp-mid-blue);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 12px;
+    border: none;
+    width: 100%;
+    font-size: 1.07rem;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: background var(--transition);
+}
+.login-container button:hover { background: var(--cp-dark-blue); }
+.error-message { color: var(--cp-red); margin-top: 16px; font-size: 1.01em; text-align: center; }
+
+/* --- Main App Content Container --- */
+main {
+    max-width: var(--section-max-width);
+    background: #fff;
+    margin: 38px auto 30px auto;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 36px 36px 26px 36px;
+    font-family: var(--font);
+}
+section {
+    margin-bottom: 30px;
+}
+h2 {
+    font-family: var(--font);
+    font-size: 1.25rem;
+    color: var(--cp-dark-blue);
+    font-weight: 700;
+    border-bottom: 2px solid var(--cp-mid-blue);
+    margin-bottom: 1.1em;
+    padding-bottom: 0.2em;
+}
+h3, h4 {
+    font-family: var(--font);
+    color: var(--cp-dark-blue);
+    font-weight: 600;
+    margin-bottom: 10px;
+    margin-top: 0;
+}
+@media (max-width:1100px) {
+    main { max-width: 99vw; padding: 16px 2vw; }
+}
+@media (max-width:700px) {
+    main { padding: 10px 1vw; }
+}
+
+/* --- Project Info Section --- */
+#project-info label { font-weight: 600; color: var(--cp-dark-blue);}
+#project-info input, #project-info select {
+    font-family: var(--font);
+    font-size: 1.04rem;
+    border-radius: 7px;
+    padding: 10px 12px;
+    border: 1px solid #b8c5d6;
+    background: #f7fafd;
+    box-shadow: var(--input-shadow);
+    transition: border var(--transition), box-shadow var(--transition);
+}
+#project-info input:focus, #project-info select:focus { border: 1.5px solid var(--cp-mid-blue); background: #fff; }
+
+/* --- Item Selector --- */
+#item-selector input, #item-selector select {
+    font-family: var(--font);
+    font-size: 1.04rem;
+    border-radius: 7px;
+    padding: 10px 12px;
+    border: 1px solid #b8c5d6;
+    background: #f7fafd;
+    box-shadow: var(--input-shadow);
+    transition: border var(--transition), box-shadow var(--transition);
+}
+#item-selector input:focus, #item-selector select:focus { border: 1.5px solid var(--cp-mid-blue); background: #fff; }
+#addToQuoteBtn, #refreshDataBtn {
+    font-family: var(--font);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    padding: 10px 22px;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+#addToQuoteBtn { background: var(--cp-green); color: #fff; }
+#addToQuoteBtn:disabled { background: #b7e4c7; color: #fff; cursor: not-allowed; }
+#refreshDataBtn { background: var(--cp-mid-blue); color: #fff; }
+#refreshDataBtn:hover { background: var(--cp-dark-blue); }
+
+/* --- Unified Input & Select Styling (for labor and all main forms) --- */
+.form-control,
+.form-select,
+#mainAppContent input[type="text"],
+#mainAppContent input[type="number"],
+#mainAppContent input[type="email"],
+#mainAppContent input[type="password"],
+#mainAppContent select,
+#mainAppContent textarea,
+.labor-card input[type="number"],
+.labor-card select {
+  font-family: var(--font);
+  font-size: 1.04rem;
+  border-radius: 7px;
+  padding: 10px 12px;
+  border: 1px solid #b8c5d6;
+  background: #f7fafd;
+  color: #1a202c;
+  box-shadow: var(--input-shadow);
+  transition: border var(--transition), box-shadow var(--transition);
+  outline: none;
+  min-width: 120px;
+  max-width: 100%;
+  width: 220px;
+  margin-bottom: 0.3em;
+}
+
+.form-control:focus,
+.form-select:focus,
+#mainAppContent input[type="text"]:focus,
+#mainAppContent input[type="number"]:focus,
+#mainAppContent input[type="email"]:focus,
+#mainAppContent input[type="password"]:focus,
+#mainAppContent select:focus,
+#mainAppContent textarea:focus,
+.labor-card input[type="number"]:focus,
+.labor-card select:focus {
+  border: 1.5px solid var(--cp-mid-blue);
+  background: #fff;
+}
+
+/* --- Item Preview Section --- */
+#item-preview {
+    display: flex;
+    background: #f7fafd;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,89,179,0.05);
+    align-items: flex-start;
+    gap: 30px;
+    padding: 22px 24px;
+    min-height: 180px;
+}
+#item-preview-details {
+    flex: 2;
+}
+#item-preview-details h3 {
+    font-weight: 700;
+    color: var(--cp-dark-blue);
+    margin: 0 0 8px 0;
+}
+#item-preview-fields div {
+    margin-bottom: 7px;
+    font-size: 1.03rem;
+    color: #1b2e4b;
+}
+#item-preview-image-container {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-top-right-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-    transition: background-color 0.2s ease, color 0.2s ease;
+}
+#item-preview-img {
+    max-width: 160px;
+    max-height: 160px;
+    border-radius: 8px;
+    border: 1px solid #e4e9ef;
+    background: #fff;
+}
+@media (max-width: 900px) {
+    #item-preview { flex-direction: column; gap: 12px; }
+    #item-preview-image-container { justify-content: flex-start; }
 }
 
-button.mic-button svg {
+#mainAppContent {
+  max-width: 1600px;    /* Make the entire tool much wider */
+  min-width: 1050px;    /* Prevents it getting too narrow on large screens */
+  margin: 24px auto;    /* Centers the content horizontally */
+  padding: 20px 28px;   /* Adds breathing room inside */
+  background: #f8fafc;  /* App background */
+  border-radius: 12px;  /* Optional: rounded corners */
+  box-shadow: 0 2px 16px #0001; /* Optional: subtle shadow */
+}
+
+/* Equipment Quote Table Styles */
+
+#quoteItemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #fff;
+}
+
+#quoteItemsTable th,
+#quoteItemsTable td {
+  border: 1px solid #e4e9ef;
+  padding: 8px 6px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.97em;
+  height: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Allow header text to wrap and match color/alignment for all */
+#quoteItemsTable th {
+  background: #e6f0ff;
+  color: #222;
+  font-weight: 700;
+  font-size: 1em;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  vertical-align: middle;
+  max-width: 120px;
+}
+
+/* Sticky header for actions (remove) column */
+#quoteItemsTable th.col-actions,
+#quoteItemsTable td.col-actions {
+  position: sticky;
+  right: 0;
+  background: #e6f0ff;
+  z-index: 2;
+  min-width: 90px;
+  box-shadow: -1px 0 6px -3px #8882;
+}
+
+/* Sticky drag handle column if you want */
+#quoteItemsTable th.col-drag,
+#quoteItemsTable td.col-drag {
+  position: sticky;
+  left: 0;
+  background: #e6f0ff;
+  z-index: 2;
+  min-width: 32px;
+  box-shadow: 1px 0 6px -3px #8882;
+}
+
+/* Drag handle style */
+#quoteItemsTable .drag-handle {
+  cursor: grab;
+  font-size: 1.3em;
+  color: #888;
+  user-select: none;
+  padding: 0 8px;
+}
+#quoteItemsTable td.col-drag {
+  width: 32px;
+  min-width: 32px;
+  text-align: center;
+}
+
+/* Image column */
+#quoteItemsTable td.col-image img {
+  max-width: 44px;
+  max-height: 44px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 5px;
+  background: #f8fafc;
+}
+
+/* Product Name and Description left-aligned */
+#quoteItemsTable td.col-product-name,
+#quoteItemsTable td.col-description {
+  text-align: left;
+}
+
+/* Description ellipsis for overflow */
+#quoteItemsTable td.col-description {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Numbers right-aligned for prices/qty/line total */
+#quoteItemsTable th.col-cost-price,
+#quoteItemsTable th.col-markup,
+#quoteItemsTable th.col-msrp,
+#quoteItemsTable th.col-sell-price,
+#quoteItemsTable th.col-qty,
+#quoteItemsTable th.col-line-total,
+#quoteItemsTable td.col-cost-price,
+#quoteItemsTable td.col-markup,
+#quoteItemsTable td.col-msrp,
+#quoteItemsTable td.col-sell-price,
+#quoteItemsTable td.col-qty,
+#quoteItemsTable td.col-line-total {
+  text-align: right;
+}
+
+/* Input fields in table */
+#quoteItemsTable td input[type="number"] {
+  width: 80px;
+  text-align: right;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 0.96em;
+  border-radius: 4px;
+  border: 1px solid #ccd6e6;
+  background: #f8fafc;
+}
+
+/* Remove button style */
+#quoteItemsTable .action-button {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-weight: 600;
+}
+
+#quoteItemsTable .action-button:hover {
+  background: #b52a37;
+}
+
+/* Responsive: hide less important columns on small screens */
+@media (max-width: 950px) {
+  #quoteItemsTable th.col-product-number,
+  #quoteItemsTable td.col-product-number,
+  #quoteItemsTable th.col-description,
+  #quoteItemsTable td.col-description,
+  #quoteItemsTable th.col-msrp,
+  #quoteItemsTable td.col-msrp {
     display: none;
-    width: 18px;
-    height: 18px;
-    fill: currentColor;
-}
-button.mic-button svg.mic-icon-default {
-    display: block;
-}
-button.mic-button.is-recording svg.mic-icon-default {
-    display: none;
-}
-button.mic-button.is-recording svg.mic-icon-recording {
-    display: block;
-    fill: var(--danger-red);
+  }
+  #quoteItemsTable th,
+  #quoteItemsTable td {
+    font-size: 0.92em;
+    padding: 7px 2px;
+  }
 }
 
-button.mic-button:hover {
-    background-color: rgba(0,0,0,0.05);
-    color: var(--clearpoint-primary-blue);
-    transform: none;
-    box-shadow: none;
-}
-button.mic-button.is-recording:hover {
-    background-color: rgba(220, 53, 69, 0.1);
-}
-
-
-#draftFullSowWithAiBtn {
-    background-color: var(--ai-purple);
-    border-color: var(--ai-purple);
-    color: white;
-    padding: 8px 15px;
-    font-size: 0.95rem;
-    display: inline-block;
-    width: auto;
-}
-#draftFullSowWithAiBtn:hover:not(:disabled) {
-    background-color: #5a2a96;
-    border-color: #5a2a96;
+/* Container for horizontal scroll if needed */
+#quoteItemsTableContainer {
+  overflow-x: auto;
+  background: #f5f8fc;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  padding: 8px;
 }
 
-.sow-input-group {
+/* --- Quote Summary --- */
+#quote-summary {
+    margin: 30px auto 0 auto;
+    max-width: 520px;
+    background: var(--cp-light-blue);
+    border-radius: 10px;
+    padding: 18px 22px;
+}
+#quoteSummaryTable { width: 100%; }
+#quoteSummaryTable td {
+    padding: 7px 10px;
+    font-size: 1.05rem;
+}
+#quoteSummaryTable td:first-child { font-weight: 600; color: #113366; text-align: left; }
+#quoteSummaryTable td:last-child { font-weight: 700; color: var(--cp-dark-blue); text-align: right; }
+
+/* --- Labor Section --- */
+#labor-section {
+    margin-bottom: 34px;
+}
+#labor-section h2 { margin-bottom: 1em; }
+.labor-card {
+    background: #f7f9fc;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e4e9ef;
+    margin-bottom: 24px;
+    padding: 0;
+}
+.labor-card-header {
+    background: var(--cp-mid-blue);
+    color: #fff;
+    padding: 16px 28px;
+    font-size: 1.12rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0;
+    border-bottom: 1px solid #e4e9ef;
+    border-radius: 12px 12px 0 0;
+}
+.labor-card-flexrows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 22px 36px;
+  align-items: start;
+  padding: 18px 24px 12px 24px;
+}
+
+.labor-row {
+  display: contents; /* let grid handle layout, don't wrap in a row div */
+}
+
+.labor-col {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.labor-card-summary {
+  grid-column: 1 / span 2; /* summary spans both columns */
+  background: #e9f2fd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  font-size: 1em;
+  min-width: 180px;
+  width: 100%;
+  box-sizing: border-box;
+  color: #14406c;
+}
+.labor-col label {
+  font-weight: 500;
+  color: #205087;
+  margin-bottom: 1px;
+}
+.tech-selectors, .sub-selectors {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 2px;
+}
+.labor-card-summary {
+  background: #e9f2fd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  font-size: 1em;
+  min-width: 180px;
+  width: 100%;
+  box-sizing: border-box;
+  color: #14406c;
+}
+.labor-card-summary p {
+  margin: 5px 0;
+  font-size: 1em;
+}
+.financial-summary {
+  align-items: flex-end;
+}
+@media (max-width: 900px) {
+  .labor-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .financial-summary {
+    align-items: flex-start;
+  }
+}
+
+/* --- Labor Summary Table --- */
+#labor-summary {
+    margin-top: 24px;
+    max-width: 520px;
+    background: var(--cp-light-blue);
+    border-radius: 10px;
+    padding: 18px 22px;
+}
+#laborSummaryTable { width: 100%; }
+#laborSummaryTable td {
+    padding: 7px 10px;
+    font-size: 1.05rem;
+}
+#laborSummaryTable td:first-child { font-weight: 600; color: #113366; text-align: left; }
+#laborSummaryTable td:last-child { font-weight: 700; color: var(--cp-dark-blue); text-align: right; }
+
+/* --- Grand Totals Section --- */
+#grand-totals-section {
+    margin-bottom: 34px;
+}
+.totals-grid {
+    display: flex;
+    gap: 26px;
+}
+.adjustment-inputs {
+    flex: 1;
+}
+.financial-breakdown {
+    flex: 2;
+}
+.adjustment-inputs h3, .financial-breakdown h3 { margin-top: 0; }
+.input-group {
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+}
+.input-group label {
+    font-weight: 600;
+    width: 135px;
+}
+.input-group input {
+    font-size: 1rem;
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: 1px solid #b8c5d6;
+    background: #fff;
+    font-family: var(--font);
+    margin-left: 8px;
+    width: 80px;
+}
+.summary-table { width: 100%; }
+.summary-table td {
+    padding: 7px 10px;
+    font-size: 1.05rem;
+}
+.summary-table td:first-child { font-weight: 600; color: #113366; text-align: left; }
+.summary-table td:last-child { font-weight: 700; color: var(--cp-dark-blue); text-align: right; }
+.subtotal-row td { background: #eaf2fb; }
+.final-total-row td { background: #28a745; color: #fff; font-size: 1.1rem; }
+.separator-row td { border: none; }
+
+/* --- SOW Section --- */
+.sow-project-info {
+    background: #f8f9fa;
+    border-left: 3px solid var(--cp-dark-blue);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 18px;
     margin-bottom: 20px;
 }
-
-.sow-input-group label {
-    display: block;
+#sowAiPromptSection {
+    background: #f0f5fb;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 0;
+}
+#sowAiPromptSection label {
     font-weight: 600;
-    color: var(--text-color);
-    margin-bottom: 8px;
+    color: var(--cp-dark-blue);
+}
+.sow-prompt-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+.sow-prompt-controls textarea {
+    font-family: var(--font);
+    flex: 1;
+    min-height: 45px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid #b8c5d6;
+    font-size: 1rem;
+}
+.mic-button {
+    background: var(--cp-accent-blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.8rem;
+    padding: 0 18px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: background var(--transition);
+}
+.mic-button:hover { background: #0086a7; }
+#sowAiPromptSection button#draftFullSowWithAiBtn {
+    margin-top: 10px;
+    background: var(--cp-mid-blue);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 10px 22px;
+}
+.sow-input-group label {
+    font-weight: 600;
+    color: var(--cp-dark-blue);
+}
+.sow-textarea {
+    font-family: var(--font);
+    width: 100%;
+    min-height: 200px;
+    border-radius: 7px;
+    border: 1px solid #b8c5d6;
+    padding: 10px 12px;
+    margin-top: 6px;
     font-size: 1.05rem;
 }
 
-.sow-textarea {
-    line-height: 1.6;
-    resize: vertical;
-    min-height: 200px;
-}
-
-
-/* --- Quote Table Styling (Equipment) --- */
-#quoteItemsTableContainer { margin-top: 20px; overflow-x: auto; }
-#quoteItemsTable { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-#quoteItemsTable th,
-#quoteItemsTable td { border: 1px solid var(--border-color); padding: 10px 12px; text-align: left; vertical-align: middle; font-size: 0.9rem; }
-#quoteItemsTable th { background-color: #e9ecef; color: var(--clearpoint-dark-blue); font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
-#quoteItemsTable tbody tr:nth-child(even) { background-color: var(--background-light-grey); }
-#quoteItemsTable tbody tr:hover { background-color: var(--clearpoint-light-blue); }
-
-.col-image { width: 60px; text-align: center; vertical-align: middle; }
-.col-image img { max-width: 40px; max-height: 40px; border-radius: 3px; background-color: var(--background-white); padding: 2px; border: 1px solid var(--border-color); display: block; margin: auto; }
-.col-product-name { min-width: 180px; }
-.col-product-number { width: 90px; }
-.col-description { min-width: 200px; max-width: 280px; white-space: normal; font-size: 0.85rem; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; }
-.col-cost-price, .col-msrp, .col-sell-price, .col-line-total { width: 100px; text-align: right; }
-.col-markup, .col-qty { width: 80px; text-align: center; }
-.col-actions { width: 90px; text-align: center;}
-
-#quoteItemsTable input[type="number"].editable-field { width: 75px; padding: 6px 8px; font-size: 0.9rem; text-align: right; }
-#quoteItemsTable input[type="number"].editable-field.qty-input { text-align: center; width: 55px; }
-#quoteItemsTable .action-button { padding: 5px 10px; font-size: 0.8rem; margin-right: 5px; background-color: var(--danger-red); color: white; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 500; }
-#quoteItemsTable .action-button:hover { background-color: #c82333; transform: none; box-shadow: none; }
-
-/* --- Labor Section Styling --- */
-#labor-section .labor-item { border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 15px 20px; margin-bottom: 20px; background-color: #fdfdfd;  }
-#labor-section .labor-item h4 { font-size: 1.15rem; color: var(--clearpoint-primary-blue); margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid var(--clearpoint-light-blue); padding-bottom: 8px; }
-#labor-section .labor-inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px 20px; margin-bottom: 15px; align-items: end; }
-#labor-section .labor-input-group { display: flex; flex-direction: column; gap: 5px; }
-#labor-section .labor-input-group label { font-size: 0.9rem; font-weight: 500; color: var(--text-light); margin-bottom: 2px; }
-#labor-section .labor-input-group input.labor-num-techs,
-#labor-section .labor-input-group input.labor-num-subcontractors,
-#labor-section .labor-input-group input.labor-num-days { width: 100px; max-width: 100px; padding: 8px 10px; font-size: 0.95rem; text-align: center; }
-#labor-section .labor-input-group input.labor-client-rate { width: 120px; max-width: 120px; text-align: right; padding: 8px 10px; font-size: 0.95rem; }
-#labor-section .labor-input-group .client-rate-display { font-size: 1rem; font-weight: 500; padding: 10px 0; }
-
-#labor-section .tech-assignment-area,
-#labor-section .subcontractor-assignment-area {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed var(--border-color);
-}
-#labor-section .tech-assignment-area h5,
-#labor-section .subcontractor-assignment-area h5 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-color);
-    margin-bottom: 10px;
-}
-#labor-section .tech-slot,
-#labor-section .subcontractor-slot {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-    padding: 8px;
-    background-color: var(--clearpoint-light-blue);
-    border-radius: 4px;
-}
-#labor-section .tech-slot label,
-#labor-section .subcontractor-slot label {
-    font-size: 0.9rem;
-    flex-basis: 100px;
-    flex-shrink: 0;
-}
-#labor-section .tech-slot select.labor-tech-select,
-#labor-section .subcontractor-slot select.labor-subcontractor-select {
-    flex-grow: 1;
-    margin: 0;
-    padding: 8px 10px;
-    padding-right: 2.5rem;
-    font-size: 0.9rem;
-    max-width: 320px;
-    min-width: 180px;
-}
-
-#labor-section .labor-item-summary { margin-top: 15px; font-size: 0.9rem; background-color: #f0f5fb; padding: 10px 15px; border-radius: 4px; max-width: 400px; margin-left: auto; margin-right: 0; }
-#labor-section .labor-item-summary p { margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }
-#labor-section .labor-item-summary p strong { color: var(--clearpoint-dark-blue); margin-left: 10px; }
-
-/* --- Equipment & Labor Summary Tables Styling --- */
-#quote-summary, #labor-summary { margin-top: 30px; padding: 20px; background-color: var(--clearpoint-light-blue); border-radius: var(--border-radius); border-top: 3px solid var(--clearpoint-primary-blue); }
-#quote-summary h3, #labor-summary h3 { margin-top: 0; margin-bottom: 15px; color: var(--clearpoint-dark-blue); font-size: 1.3rem; }
-#quoteSummaryTable, #laborSummaryTable { width: 100%; max-width: 550px; margin-left: auto; }
-#quoteSummaryTable td, #laborSummaryTable td { padding: 8px 10px; font-size: 1rem; border-bottom: 1px solid #d4e3f3; }
-#quoteSummaryTable tr:last-child td, #laborSummaryTable tr:last-child td { border-bottom: none; }
-#quoteSummaryTable td:first-child,
-#laborSummaryTable td:first-child { font-weight: 600; color: var(--text-color); text-align: left; padding-right: 15px; width: 70%; }
-#quoteSummaryTable td:last-child,
-#laborSummaryTable td:last-child { font-weight: 700; color: var(--clearpoint-dark-blue); text-align: right; width: 30%; }
-
-/* --- Grand Totals & Adjustments Section Styling --- */
-#grand-totals-section .totals-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px 30px; align-items: start; }
-#grand-totals-section .adjustment-inputs h3,
-#grand-totals-section .financial-breakdown h3 { margin-bottom: 15px; }
-#grand-totals-section .adjustment-inputs .input-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
-#grand-totals-section .adjustment-inputs label { font-size: 0.9rem; font-weight: 500; color: var(--text-light); }
-#grand-totals-section .adjustment-inputs input[type="number"] { width: 100%; max-width: 180px; text-align: right; padding: 8px 10px; }
-#grand-totals-section .financial-breakdown .summary-table { width: 100%; font-size: 0.95rem; }
-#grand-totals-section .financial-breakdown .summary-table td { padding: 9px 5px; border-bottom: 1px dotted #cce0f5; }
-#grand-totals-section .financial-breakdown .summary-table tr:last-child td { border-bottom: none; }
-#grand-totals-section .financial-breakdown .summary-table td:first-child { text-align: left; color: var(--text-light); font-weight: 500; width: 65%; }
-#grand-totals-section .financial-breakdown .summary-table td:last-child { text-align: right; font-weight: 600; color: var(--text-color); width: 35%; }
-#grand-totals-section .financial-breakdown .summary-table .subtotal-row td { font-weight: 600; color: var(--text-color); border-top: 1px solid var(--border-color); background-color: #fafdff; }
-#grand-totals-section .financial-breakdown .summary-table .final-total-row td { font-weight: 700; font-size: 1.2rem; color: var(--clearpoint-dark-blue); border-top: 2px solid var(--clearpoint-primary-blue); padding-top: 12px; background-color: var(--clearpoint-light-blue); }
-#grand-totals-section .financial-breakdown .summary-table .separator-row td { padding: 8px 0; border-bottom: 1px solid var(--border-color); height: 1px; line-height: 1px; }
-#grand-totals-section .financial-breakdown .summary-table .separator-row td:empty { padding: 0; }
-
-#emptyQuoteMsg { font-style: italic; color: var(--text-light); padding: 20px; text-align: center; background-color: var(--clearpoint-light-blue); border-radius: var(--border-radius); }
-
-/* --- Final Quote Action Buttons Styling (Persistent) --- */
+/* --- Action Buttons --- */
 .persistent-actions {
-    margin-top: 30px;
-    padding: 20px 25px;
-    border-top: 1px solid var(--border-color);
+    margin-top: 34px;
     text-align: right;
-    background-color: var(--background-white);
 }
 .persistent-actions button {
-    margin-left: 10px;
-    padding: 12px 20px;
-    font-size: 0.95rem;
+    background: var(--cp-mid-blue);
+    color: #fff;
+    border-radius: 6px;
+    border: none;
+    padding: 10px 20px;
     font-weight: 600;
-}
-
-#viewSpecSheetsBtn { background-color: var(--clearpoint-primary-blue); border-color: var(--clearpoint-primary-blue); }
-#viewSpecSheetsBtn:hover:not(:disabled) { background-color: var(--clearpoint-dark-blue); border-color: var(--clearpoint-dark-blue); }
-#printQuoteBtn { background-color: var(--clearpoint-dark-blue); border-color: var(--clearpoint-dark-blue); }
-#printQuoteBtn:hover:not(:disabled) { background-color: #002244; border-color: #002244; }
-#downloadPdfBtn { background-color: var(--success-green); border-color: var(--success-green); }
-#downloadPdfBtn:hover:not(:disabled) { background-color: #1e7e34; border-color: #1e7e34; }
-
-#downloadSowPdfBtn {
-    background-color: var(--clearpoint-primary-blue);
-    border-color: var(--clearpoint-primary-blue);
-}
-#downloadSowPdfBtn:hover:not(:disabled) {
-    background-color: var(--clearpoint-dark-blue);
-    border-color: var(--clearpoint-dark-blue);
-}
-
-
-/* --- Modal Styling --- */
-.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); padding-top: 40px; }
-.modal-content { background-color: var(--background-white); margin: 5% auto; padding: 25px; border: 1px solid var(--border-color); width: 90%; max-width: 500px; border-radius: var(--border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.2); position: relative; }
-.modal-content h2 { margin-top: 0; font-size: 1.4rem; color: var(--clearpoint-dark-blue); padding-bottom: 10px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
-.modal-close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; line-height: 1; }
-.modal-close-button:hover, .modal-close-button:focus { color: var(--danger-red); text-decoration: none; cursor: pointer; }
-
-#specSheetModal .modal-content { max-width: 600px; }
-#specSheetLinksContainer { max-height: 400px; overflow-y: auto; }
-#specSheetLinksContainer ul { list-style-type: none; padding: 0; margin: 0; }
-#specSheetLinksContainer li { padding: 8px 0; border-bottom: 1px dotted var(--clearpoint-light-blue); }
-#specSheetLinksContainer li:last-child { border-bottom: none; }
-#specSheetLinksContainer a { text-decoration: none; color: var(--clearpoint-primary-blue); font-weight: 500; }
-#specSheetLinksContainer a:hover { text-decoration: underline; color: var(--clearpoint-dark-blue); }
-#specSheetLinksContainer p { font-style: italic; color: var(--text-light); }
-
-
-/* --- Footer --- */
-footer { text-align: center; padding: 1.5rem; background-color: #343a40; color: #f8f9fa; margin-top: 40px; font-size: 0.9rem; }
-
-/* --- UI Feedback Styles --- */
-@keyframes highlight-fade {
-    0% {
-        background-color: var(--warning-yellow);
-        opacity: 0.8;
-    }
-    50% {
-        background-color: var(--warning-yellow);
-        opacity: 0.7;
-    }
-    100% {
-        background-color: transparent;
-        opacity: 1;
-    }
-}
-
-.highlight-update {
-    animation: highlight-fade 0.8s ease-out;
-}
-
-td.highlight-update {
-    animation: highlight-fade 0.8s ease-out;
-}
-
-/* --- Drag and Drop Styles for Quote Table --- */
-#quoteItemsTbody tr[draggable="true"] {
-    cursor: grab;
-}
-
-#quoteItemsTbody tr.dragging {
-    opacity: 0.5;
-    background-color: var(--clearpoint-light-blue);
-}
-
-#quoteItemsTbody tr.drag-over-target {
-    outline: 2px dashed var(--clearpoint-primary-blue);
-    outline-offset: -2px;
-}
-
-
-/* --- Load Quote Sidebar Styles --- */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: -320px; /* Start off-screen; make it a bit wider than content for shadow */
-    width: 300px;
-    height: 100vh; /* Use vh for full viewport height */
-    background-color: #f8f9fa;
-    border-right: 1px solid var(--border-color);
-    box-shadow: 2px 0 10px rgba(0,0,0,0.15); /* Slightly more pronounced shadow */
-    padding: 20px;
-    box-sizing: border-box;
-    z-index: 1001; /* Ensure it's above most other content */
-    overflow-y: auto;
-    transition: left 0.3s ease-in-out;
-}
-
-.sidebar.open {
-    left: 0; /* Slide in to become visible */
-}
-
-.sidebar h3 {
-    margin-top: 0;
-    color: var(--clearpoint-dark-blue);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-    font-size: 1.2rem;
-}
-
-.saved-quotes-list {
-    margin-top: 15px;
-}
-
-.saved-quotes-list .quote-item-entry {
-    padding: 12px 10px;
-    border-bottom: 1px solid #e9ecef;
+    font-size: 1.04rem;
+    margin-left: 8px;
+    transition: background var(--transition), filter var(--transition);
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.2s ease;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
+.persistent-actions button:hover { filter: brightness(1.09); }
+.persistent-actions button#viewSpecSheetsBtn { background: var(--cp-accent-blue); }
+.persistent-actions button#printQuoteBtn { background: var(--cp-green);}
+.persistent-actions button#downloadPdfBtn, .persistent-actions button#downloadSowPdfBtn { background: var(--cp-orange);}
+.persistent-actions button#downloadPdfBtn:hover, .persistent-actions button#downloadSowPdfBtn:hover { background: #ca870c; }
 
-.saved-quotes-list .quote-item-entry:last-child {
-    border-bottom: none;
+/* --- Modal --- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5);
+    padding-top: 40px;
 }
-
-.saved-quotes-list .quote-item-entry:hover {
-    background-color: var(--clearpoint-light-blue);
+.modal-content {
+    background: #fff;
+    margin: 5% auto;
+    padding: 25px;
+    border: 1px solid #e4e9ef;
+    width: 92%;
+    max-width: 480px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
 }
-
-.saved-quotes-list .quote-item-entry .quote-info {
-    flex-grow: 1;
-}
-
-.saved-quotes-list .quote-item-entry strong {
-    display: block;
-    font-weight: 600;
-    color: var(--clearpoint-primary-blue);
-    margin-bottom: 3px;
-}
- .saved-quotes-list .quote-item-entry small {
-    font-size: 0.75rem;
-    color: var(--text-light);
-    display: block;
-}
-
-.delete-quote-btn {
-    background-color: transparent;
-    color: var(--danger-red);
-    border: 1px solid var(--danger-red);
-    border-radius: var(--border-radius);
-    padding: 3px 7px;
-    font-size: 0.8rem;
+.modal-close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
     line-height: 1;
     cursor: pointer;
-    margin-left: 10px;
-    opacity: 0.7;
-    transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+}
+.modal-close-button:hover { color: var(--cp-red); }
+
+/* --- Footer --- */
+footer {
+    text-align: center;
+    padding: 1.5rem;
+    background: var(--cp-dark-blue);
+    color: #f8f9fa;
+    font-size: 0.93rem;
+    border-radius: 0 0 14px 14px;
+    margin-top: 0;
 }
 
-.delete-quote-btn:hover {
-    background-color: var(--danger-red);
-    color: white;
-    opacity: 1;
-    transform: none;
-    box-shadow: none;
+/* --- Utils --- */
+.full-width { width: 100%; }
+.form-group { margin-bottom: 1.25rem; }
+.success-notification {
+    color: var(--cp-green);
+    font-weight: 600;
+    padding: 5px 0 0 0;
+    font-size: 1.04em;
 }
 
+::-webkit-scrollbar-thumb { background: #d0e1ee; border-radius: 8px; }
+::-webkit-scrollbar { width: 9px; background: #f7fafd; }
 
-/* --- Print Specific Styles --- */
+@media (max-width: 700px) {
+    .totals-grid { flex-direction: column; gap: 12px; }
+    .labor-card-summary { flex-direction: column; gap: 10px; }
+    #quoteItemsTable { min-width: 600px; font-size: 0.98rem; }
+    .login-container { box-shadow: none; padding: 20px 6vw; }
+    main { min-width: 90vw; }
+}
+
+/* --- Print Styles --- */
 @media print {
-    body { font-size: 10pt; background-color: #fff; color: #000; }
-    header, footer,
-    #project-info .status-selector-container, /* Hide status UI specifically */
-    #item-selector, #item-preview, #refreshDataBtn,
-    .view-navigation-tabs #toggleLoadQuoteSidebarBtn,
-    .view-navigation-tabs #newQuoteBtn, /* Also hide new quote button */
-    .persistent-actions #saveQuoteBtn,
-    #loadQuoteSidebar,
-    #downloadSowPdfBtn,
-    #dataLoadStatus,
-    #grand-totals-section .adjustment-inputs,
-    .modal,
-    .sow-input-group label,
-    #sowAiPromptSection
-    {
-        display: none !important;
-    }
-
-    main { width: 100%; max-width: 100%; padding: 0; margin: 0; box-shadow: none; margin-left: 0 !important; }
-    section { box-shadow: none; border: none; padding: 10px 0; margin-bottom: 15px; }
-
-    .view-container { display: none !important; }
-    .view-container.active-view { display: block !important; }
-
-    h2, h3 { border-bottom: 1px solid #ccc; font-size: 14pt; margin-bottom: 10px; }
-    #quoteItemsTableContainer, #labor-section, #grand-totals-section, #sow-editor-section { overflow-x: visible; }
-
-    .sow-textarea,
-    .tox-edit-area__iframe,
-    #quoteItemsTable, #labor-section .labor-item, #laborSummaryTable, #quoteSummaryTable,
-    #grand-totals-section .financial-breakdown .summary-table
-    {
-        font-size: 9pt;
-        border-collapse: collapse;
-        border: none;
-        padding: 0;
-        margin: 0 0 10px 0;
-        width: 100% !important;
-        background-color: transparent !important;
-        color: #000 !important;
-        -webkit-print-color-adjust: exact;
-        color-adjust: exact;
-    }
-
-    #quoteItemsTable th, #quoteItemsTable td,
-    #laborSummaryTable td, #quoteSummaryTable td,
-    #grand-totals-section .financial-breakdown .summary-table td
-     {
-        padding: 5px 8px;
-        border: 1px solid #ccc !important;
-    }
-
-    #labor-section .labor-item-summary { background-color: transparent !important; padding: 5px 0; border-top: 1px dotted #ccc; max-width: 100%; margin-left:0; }
-    #labor-section .labor-item-summary p { font-size: 8pt; }
-
-    .col-image img
-     {
-        max-width: 35px !important;
-        max-height: 35px !important;
-        padding: 1px !important;
-    }
-    .col-description
-     {
-        max-width: none;
-        font-size: 8pt;
-        white-space: normal;
-    }
-
-    #quoteItemsTable input.editable-field,
-    #labor-section input.editable-field { border: none; background-color: transparent; padding: 0; width: auto; text-align: inherit; box-shadow: none; -moz-appearance: textfield; color: #000; }
-    #quoteItemsTable input.editable-field::-webkit-outer-spin-button,
-    #quoteItemsTable input.editable-field::-webkit-inner-spin-button,
-    #labor-section input.editable-field::-webkit-outer-spin-button,
-    #labor-section input.editable-field::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    #quoteItemsTable .action-button, #labor-section .action-button { display: none !important; }
-    #quote-summary, #labor-summary, #grand-totals-section .financial-breakdown
-     {
-        margin-top: 20px; padding: 10px 0; border-top: 1px solid #000; background-color: transparent;
-    }
-    #quoteSummaryTable, #laborSummaryTable, #grand-totals-section .financial-breakdown .summary-table
-     {
-        max-width: 100%;
-    }
-    #quoteSummaryTable td, #laborSummaryTable td, #grand-totals-section .financial-breakdown .summary-table td
-     {
-        font-size: 10pt;
-    }
-    .tox-tinymce, .tox-editor-header, .tox-statusbar {
-        display: none !important;
-    }
+    body, main, section, table, h1, h2, h3, h4, h5, h6 { color: #000 !important; background: #fff !important; }
+    header, #floatingActionBar, #loadQuoteSidebar, .persistent-actions, .modal, .mic-button, #quote-actions-final, #view-navigation { display: none !important; }
+    main { box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+    #quoteItemsTableContainer, #labor-section, #grand-totals-section { overflow-x: visible; }
+    #quoteItemsTable, .summary-table, #laborSummaryTable, #quoteSummaryTable { font-size: 9pt; border-collapse: collapse; border: 1px solid #ccc; }
+    #quoteItemsTable th, #quoteItemsTable td, .summary-table td, #laborSummaryTable td, #quoteSummaryTable td { border: 1px solid #ccc !important; padding: 5px 8px; }
+    #quoteItemsTable input, #quoteItemsTable select, .summary-table input, #laborSummaryTable input { border: none; background: transparent; color: #000; }
+    .action-button { display: none !important; }
 }
