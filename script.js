@@ -1560,10 +1560,7 @@ function closeCustomerModal() {
   document.getElementById("customerAccountModal").style.display = "none";
 }
 
-// --- Modal open/close events ---
-document.getElementById("newQuoteBarBtn").onclick = function() {
-document.getElementById("closeCustomerModalBtn").onclick = closeCustomerModal;
-}
+
 // --- Step 1: Search existing customers ---
 document.getElementById("customerSearchInput").oninput = async function() {
   const searchVal = this.value.trim().toLowerCase();
