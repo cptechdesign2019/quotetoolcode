@@ -1030,7 +1030,16 @@ h3, h4 {
     background: rgba(0,0,0,0.5);
     padding-top: 40px;
 }
-
+.modal-content {
+    background: #fff;
+    margin: 5% auto;
+    padding: 25px;
+    border: 1px solid #e4e9ef;
+    width: 92%;
+    max-width: 480px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+}
 .modal-close-button {
     color: #aaa;
     float: right;
@@ -1676,119 +1685,4 @@ input[type="submit"],
 #customersModalCancelBtn:hover {
   background: #ededed;
   border-color: #888;
-}
-
-/* Modal window style */
-#editCustomerModal {
-  border-radius: 12px;
-  box-shadow: 0 6px 32px rgba(0,0,0,0.18);
-  padding: 32px 28px 24px 28px;
-  max-width: 540px;
-  margin: 32px auto;
-  position: relative;
-}
-
-#editCustomerModal h2 {
-  color: #1976d2;
-  font-size: 2rem;
-  margin-bottom: 18px;
-  font-weight: 700;
-}
-
-#editCustomerModal form label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-  font-size: 1.05em;
-  color: #244366;
-  letter-spacing: 0.01em;
-}
-
-#editCustomerModal form .input-row {
-  display: flex;
-  gap: 18px;
-}
-
-#editCustomerModal form .input-row > div {
-  flex: 1;
-}
-
-#editCustomerModal input[type="text"],
-#editCustomerModal input[type="email"] {
-  width: 100%;
-  padding: 10px 13px;
-  border: 1px solid #baccd9;
-  border-radius: 6px;
-  background: #f9fafd;
-  margin-bottom: 18px;
-  font-size: 1em;
-  box-sizing: border-box;
-  transition: border 0.2s;
-}
-
-#editCustomerModal input[type="text"]:focus,
-#editCustomerModal input[type="email"]:focus {
-  border-color: #1976d2;
-  outline: none;
-}
-
-#editCustomerModal .modal-actions {
-  display: flex;
-  justify-content: flex-start;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-#editCustomerModal button[type="submit"] {
-  background: #1976d2;
-  color: #fff;
-  border: none;
-  padding: 10px 26px;
-  border-radius: 5px;
-  font-weight: 600;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-
-#editCustomerModal button[type="submit"]:hover {
-  background: #145ea8;
-}
-
-#editCustomerModal .cancel-btn {
-  background: #f4f6f8;
-  color: #444;
-  border: 1px solid #cdd9e5;
-  padding: 10px 26px;
-  border-radius: 5px;
-  font-weight: 500;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-
-#editCustomerModal .cancel-btn:hover {
-  background: #e4e7ea;
-}
-
-.modal {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(36, 54, 66, 0.10); /* subtle dark overlay */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.modal-content {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 6px 32px rgba(0,0,0,0.18);
-  padding: 32px 28px 24px 28px;
-  max-width: 540px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
 }
