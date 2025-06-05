@@ -1,33 +1,28 @@
 // Clearpoint AV Quoting Tool - Main JS
-// Assumes DOM matches the provided HTML structure and IDs/classes
-// Uses Firebase for auth/data, supports branded UI and all described features
+// Full script: includes tab logic, AI SOW/task list, mic, overlays, TinyMCE, editable table, quote/labor logic, and all previous features
 
 // ------------- FIREBASE CONFIG -------------
-// TODO: Fill in your Firebase config here!
 const firebaseConfig = {
-    apiKey: "AIzaSyCZ1hlNQ6TbyJsBgFplVBmiqBRTbgJreZM", // PASTE YOUR ACTUAL API KEY HERE
-    authDomain: "clearpoint-quoting-tool.firebaseapp.com", // PASTE YOUR ACTUAL AUTH DOMAIN HERE
-    projectId: "clearpoint-quoting-tool", // PASTE YOUR ACTUAL PROJECT ID HERE
-    storageBucket: "clearpoint-quoting-tool.firebasestorage.app", // PASTE YOUR ACTUAL STORAGE BUCKET HERE
-    messagingSenderId: "551915292541", // PASTE YOUR ACTUAL MESSAGING SENDER ID HERE
-    appId: "1:551915292541:web:eae34446f251a9223fae14" // PASTE YOUR ACTUAL APP ID HERE
+    apiKey: "AIzaSyCZ1hlNQ6TbyJsBgFplVBmiqBRTbgJreZM",
+    authDomain: "clearpoint-quoting-tool.firebaseapp.com",
+    projectId: "clearpoint-quoting-tool",
+    storageBucket: "clearpoint-quoting-tool.firebasestorage.app",
+    messagingSenderId: "551915292541",
+    appId: "1:551915292541:web:eae34446f251a9223fae14"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ------------- GLOBALS -------------
-// Only use window.quoteItems and window.laborSections for all quote/labor logic!
 window.quoteItems = window.quoteItems || [];
 window.laborSections = window.laborSections || [];
+window.taskList = window.taskList || [];
 
 let currentUser = null;
 let products = [];
 let filteredProducts = [];
 let selectedProduct = null;
-// Remove local quoteItems and laborSections
-// let quoteItems = [];
-// let laborSections = [];
 let templates = [];
 let savedQuotes = [];
 let activeQuoteId = null;
@@ -38,8 +33,6 @@ const techList = [
   "John - Technician",
   "Joe - Technician"
 ];
-
-// --- Labor Section Config ---
 const laborConfig = [
   { id: "sde", label: "System Design & Engineering", showSubs: false, defaultRate: 150 },
   { id: "programming", label: "Programming", showSubs: false, defaultRate: 150 },
@@ -47,32 +40,75 @@ const laborConfig = [
   { id: "installation", label: "Installation", showSubs: true, defaultRate: 100 }
 ];
 
+// ----------- TAB NAVIGATION -----------
+
+const mainTabs = [
+  { btn: "tabQuoteBuilderBtn", page: "tabQuoteBuilderPage" },
+  { btn: "tabScopeOfWorkBtn", page: "tabScopeOfWorkPage" },
+  { btn: "tabTaskListBtn", page: "tabTaskListPage" }
+];
+mainTabs.forEach(({ btn, page }) => {
+  document.getElementById(btn).addEventListener("click", () => {
+    // Deactivate the Product Library tab and hide its section
+    document.getElementById("tabProductLibraryBtn").classList.remove("active");
+    document.getElementById("productLibrarySection").style.display = "none";
+
+    // Handle active state and visibility for the other main tabs and pages
+    mainTabs.forEach(({ btn: b, page: p }) => {
+      document.getElementById(b).classList.toggle("active", b === btn);
+      document.getElementById(p).style.display = (p === page ? "" : "none");
+    });
+
+    // Special handling for TinyMCE if the Scope of Work tab is selected
+    if (page === "tabScopeOfWorkPage") {
+      setTimeout(() => {
+        if (window.tinymce && tinymce.get("sowFullOutputText")) tinymce.get("sowFullOutputText"); // Ensure editor is properly initialized/focused
+      }, 200);
+    }
+  });
+});
+
+// ---- PRODUCT LIBRARY TAB LOGIC ----
+document.getElementById("tabProductLibraryBtn").addEventListener("click", () => {
+  // Remove active class from all tab buttons
+  document.querySelectorAll(".main-tab-btn").forEach(btn => btn.classList.remove("active"));
+  // Hide all main-tab-page sections
+  document.querySelectorAll(".main-tab-page").forEach(page => page.style.display = "none");
+  // Hide the login view if showing
+  if (document.getElementById("loginView")) document.getElementById("loginView").style.display = "none";
+  // Show Product Library section
+  document.getElementById("productLibrarySection").style.display = "";
+  // Make tab active
+  document.getElementById("tabProductLibraryBtn").classList.add("active");
+  // Optionally, clear product table until brand is chosen
+  document.querySelector("#productLibraryTable tbody").innerHTML = '';
+  // Load brand options (implement next)
+  loadBrandFilterOptions();
+});
+
 // ------------- AUTH: LOGIN/LOGOUT -------------
 function showLogin() {
   document.getElementById("mainAppContent").style.display = "none";
   document.getElementById("loginView").style.display = "block";
+
+  // Hide elements that should only be visible when logged in
+  document.getElementById("logoutButton").style.display = "none";
+  document.getElementById("floatingActionBar").style.display = "none";
+  document.getElementById("mainTabNav").style.display = "none"; // Ensure this line is present and correct
 }
 
 function showApp() {
+  // Hide the login view
   document.getElementById("loginView").style.display = "none";
-  document.getElementById("mainAppContent").style.display = "block";
-  document.getElementById("logoutButton").style.display = "block";
 
-  [
-    "project-info",
-    "item-selector",
-    "item-preview",
-    "quote-display",
-    "labor-section",
-    "grand-totals-section",
-    "quote-actions-final"
-  ].forEach(id => {
-    var el = document.getElementById(id);
-    if (el) el.style.display = "";
-  });
-  // SOW section hidden by default
-  var sow = document.getElementById("sow-editor-section");
-  if (sow) sow.style.display = "none";
+  // Show the main application content
+  document.getElementById("mainAppContent").style.display = "block";
+
+  // Show elements that should be visible only when logged in,
+  // using setProperty to ensure they override CSS if '!important' was used for hiding.
+  document.getElementById("logoutButton").style.setProperty("display", "block", "important");
+  document.getElementById("floatingActionBar").style.setProperty("display", "flex", "important");
+  document.getElementById("mainTabNav").style.setProperty("display", "flex", "important");
 }
 
 auth.onAuthStateChanged(user => {
@@ -81,11 +117,13 @@ auth.onAuthStateChanged(user => {
     showApp();
     loadInitialData();
     updateFooterYear();
+    setTimeout(() => {
+      if (window.tinymce && tinymce.get("sowFullOutputText")) tinymce.get("sowFullOutputText");
+    }, 500);
   } else {
     showLogin();
   }
 });
-
 document.getElementById("loginButton").onclick = async function() {
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
@@ -96,7 +134,6 @@ document.getElementById("loginButton").onclick = async function() {
     document.getElementById("loginError").innerText = e.message || "Login failed.";
   }
 };
-
 document.getElementById("logoutButton").onclick = function() {
   auth.signOut();
 };
@@ -104,11 +141,12 @@ document.getElementById("logoutButton").onclick = function() {
 // ------------- INITIAL DATA LOAD -------------
 async function loadInitialData() {
   await loadProducts();
-  //await loadTemplates(); // Uncomment if implemented
-  //await loadSavedQuotes?.(); // Optional chaining in case not implemented yet
+  await loadQuotesAndTemplates();
   renderLaborSections();
   renderSidebar();
   updateGrandTotals();
+  initTinyMCE();
+  renderTaskListTable();
 }
 
 // ------------- PRODUCTS: LOAD & SEARCH -------------
@@ -134,14 +172,12 @@ async function loadProducts() {
     console.error("Error loading products from Firestore:", err);
   }
 }
-
 function updateBrandFilter() {
   const brandsSet = new Set(products.map(p => (p.brand || "").trim()).filter(b => b));
   const brands = Array.from(brandsSet).sort((a, b) => a.localeCompare(b));
   const brandDropdown = document.getElementById("brandFilterDropdown");
   brandDropdown.innerHTML = `<option value="">All Brands</option>` + brands.map(b => `<option>${b}</option>`).join("");
 }
-
 function updateProductDropdown() {
   const dropdown = document.getElementById("productDropdown");
   dropdown.innerHTML = `<option value="">-- Select a Product --</option>` +
@@ -149,47 +185,33 @@ function updateProductDropdown() {
       let brand = p.brand && p.brand.trim() ? p.brand.trim() : "[No Brand]";
       let name = p.productName && p.productName.trim() && p.productName.trim().toLowerCase() !== "n/a" ? p.productName.trim() : "";
       let display = "";
-
-      if (brand !== "[No Brand]") {
-        display += brand;
-      }
-
-      if (name) {
-        display += display ? " – " + name : name;
-      }
-
+      if (brand !== "[No Brand]") display += brand;
+      if (name) display += display ? " – " + name : name;
       if (!display.trim()) display = "[No Product Data]";
-
       return `<option value="${i}" title="${p.description || ''}">${display}</option>`;
     }).join("");
   dropdown.disabled = filteredProducts.length === 0;
 }
-
-// Search filter
 document.getElementById("productSearchInput").oninput = filterProducts;
 document.getElementById("brandFilterDropdown").onchange = filterProducts;
-
 function filterProducts() {
   const search = document.getElementById("productSearchInput").value.toLowerCase();
   const brand = document.getElementById("brandFilterDropdown").value;
   const brandLC = brand ? brand.toLowerCase() : "";
   filteredProducts = products.filter(p =>
     (!brandLC || ((p.brand || "").toLowerCase() === brandLC)) &&
-    ((p.name || "").toLowerCase().includes(search) ||
+    ((p.productName || "").toLowerCase().includes(search) ||
      (p.productNumber || "").toLowerCase().includes(search) ||
      (p.brand || "").toLowerCase().includes(search))
   );
   updateProductDropdown();
 }
-
-// Product dropdown change
 document.getElementById("productDropdown").onchange = function() {
   const idx = this.value;
   selectedProduct = idx ? filteredProducts[idx] : null;
   updateItemPreview();
   document.getElementById("addToQuoteBtn").disabled = !selectedProduct;
 };
-
 function updateItemPreview() {
   const p = selectedProduct;
   if (!p) {
@@ -222,8 +244,6 @@ function updateItemPreview() {
 // ------------- QUOTE LOGIC -------------
 document.getElementById("addToQuoteBtn").onclick = function() {
   if (!selectedProduct) return;
-
-  // Calculate sellPrice and markup
   let sellPrice = typeof selectedProduct.msrp === "number"
     ? selectedProduct.msrp
     : (typeof selectedProduct.map === "number"
@@ -235,35 +255,25 @@ document.getElementById("addToQuoteBtn").onclick = function() {
   if (typeof selectedProduct.costPrice === "number" && selectedProduct.costPrice > 0) {
     markup = ((sellPrice - selectedProduct.costPrice) / selectedProduct.costPrice) * 100;
   }
-
-  // Add to quote
   window.quoteItems.push({
     ...selectedProduct,
     markup: parseFloat(markup.toFixed(2)),
     sellPrice: parseFloat(sellPrice.toFixed(2)),
     qty: 1
   });
-
   renderQuoteTable();
   updateQuoteSummary();
   updateGrandTotals();
-
-  // Clear preview & reset dropdown
   selectedProduct = null;
   document.getElementById("productDropdown").value = "";
   updateItemPreview();
   document.getElementById("addToQuoteBtn").disabled = true;
-
-  // Success notification
   document.getElementById("addSuccessNotification").innerText = "Item added to quote!";
   setTimeout(() => document.getElementById("addSuccessNotification").innerText = "", 1800);
 };
-
-// Renders the quote table with editable fields for Markup %, Sell Price, and Qty
 function renderQuoteTable() {
   const tbody = document.getElementById("quoteItemsTbody");
   if (!tbody) return;
-
   if (window.quoteItems.length === 0) {
     document.getElementById("emptyQuoteMsg").style.display = "";
     tbody.innerHTML = "";
@@ -271,7 +281,6 @@ function renderQuoteTable() {
   } else {
     document.getElementById("emptyQuoteMsg").style.display = "none";
   }
-
   tbody.innerHTML = window.quoteItems.map((item, idx) => `
     <tr data-idx="${idx}">
       <td class="col-drag"><span class="drag-handle" style="cursor: grab;">☰</span></td>
@@ -305,18 +314,14 @@ function renderQuoteTable() {
       </td>
     </tr>
   `).join("");
-
-  // Initialize or update SortableJS for drag-and-drop row reordering
   if (!window.quoteTableSortable) {
     window.quoteTableSortable = Sortable.create(tbody, {
       animation: 150,
       handle: '.drag-handle',
       onEnd: function (evt) {
-        // Get the new order of indexes
         const newOrder = Array.from(tbody.children).map(row => parseInt(row.dataset.idx, 10));
-        // Reorder window.quoteItems array
         window.quoteItems = newOrder.map(i => window.quoteItems[i]);
-        renderQuoteTable(); // re-render table to update indices and event handlers
+        renderQuoteTable();
         updateQuoteSummary();
         updateGrandTotals();
       }
@@ -325,11 +330,8 @@ function renderQuoteTable() {
     window.quoteTableSortable.option("disabled", false);
   }
 }
-
-// Updates an individual quote item, recalculates dependent fields, and refreshes summary
 function updateQuoteItem(idx, field, value) {
   if (!window.quoteItems[idx]) return;
-
   if (field === "markup") {
     window.quoteItems[idx].markup = parseFloat(value);
     if (typeof window.quoteItems[idx].costPrice === "number") {
@@ -347,25 +349,19 @@ function updateQuoteItem(idx, field, value) {
   } else if (field === "qty") {
     window.quoteItems[idx].qty = parseInt(value, 10);
   }
-
   renderQuoteTable();
   updateQuoteSummary();
   updateGrandTotals();
 }
-
-// Removes an item from the quote and refreshes table and summary
 function removeQuoteItem(idx) {
   window.quoteItems.splice(idx, 1);
   renderQuoteTable();
   updateQuoteSummary();
   updateGrandTotals();
 }
-
-// Updates the equipment quote summary (cost, sell, profit, margin)
 function updateQuoteSummary() {
   let totalCost = 0;
   let totalSell = 0;
-
   window.quoteItems.forEach(item => {
     const qty = parseInt(item.qty, 10) || 1;
     const cost = typeof item.costPrice === "number" ? item.costPrice : 0;
@@ -373,11 +369,8 @@ function updateQuoteSummary() {
     totalCost += qty * cost;
     totalSell += qty * sell;
   });
-
   const profit = totalSell - totalCost;
   const grossProfitMargin = totalSell > 0 ? (profit / totalSell) * 100 : 0;
-
-  // Equipment Quote Summary section
   if (document.getElementById("summaryCostTotal")) {
     document.getElementById("summaryCostTotal").innerText = `$${totalCost.toFixed(2)}`;
   }
@@ -390,45 +383,9 @@ function updateQuoteSummary() {
   if (document.getElementById("summaryGPM")) {
     document.getElementById("summaryGPM").innerText = `${grossProfitMargin.toFixed(2)}%`;
   }
-
-  // Remove grand total/overall DOM updates from here!
-  // These fields are now only updated in updateGrandTotals()
 }
 
-function addQuoteTableListeners() {
-  const tbody = document.getElementById("quoteItemsTbody");
-  if (!tbody) return;
-
-  // Remove previous listeners (optional: depends on your re-render logic)
-  tbody.removeEventListener("change", quoteTableChangeHandler);
-  tbody.removeEventListener("click", quoteTableClickHandler);
-
-  // Delegate 'change' events for markup, sellPrice, qty fields
-  tbody.addEventListener("change", quoteTableChangeHandler);
-
-  // Delegate 'click' events for remove buttons
-  tbody.addEventListener("click", quoteTableClickHandler);
-}
-
-function quoteTableChangeHandler(e) {
-  const tr = e.target.closest("tr");
-  if (!tr) return;
-  const idx = tr.rowIndex - 1; // Adjust if you have a header row
-
-  if (e.target.matches("input[type='number'][data-field]")) {
-    updateQuoteItem(idx, e.target.getAttribute("data-field"), e.target.value);
-  }
-}
-
-function quoteTableClickHandler(e) {
-  if (e.target.matches(".action-button")) {
-    const tr = e.target.closest("tr");
-    if (!tr) return;
-    const idx = tr.rowIndex - 1;
-    removeQuoteItem(idx);
-  }
-}
-
+// ------------- LABOR SECTION -------------
 function renderLaborSections() {
   window.laborSections = window.laborSections || [];
 
@@ -788,76 +745,516 @@ function updateGrandTotals() {
   document.getElementById(id).onchange = updateGrandTotals;
 });
 
-// ------------- FOOTER YEAR -------------
-function updateFooterYear() {
-  document.getElementById("currentYear").innerText = (new Date()).getFullYear();
+// ------------- QUOTES & TEMPLATES LOAD/SIDEBAR -------------
+async function loadQuotesAndTemplates() {
+  const quotesSnap = await db.collection("quotes").orderBy("lastEditedAt", "desc").get();
+  savedQuotes = quotesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const templatesSnap = await db.collection("templates").orderBy("lastEditedAt", "desc").get();
+  templates = templatesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
-
-// ------------- SIDEBAR, TEMPLATES, SAVED QUOTES -------------
 function renderSidebar() {
-  // TODO: Render templates and saved quotes in sidebar
-  // Example:
-  // document.getElementById("templateList").innerHTML = templates.map(...).join("");
-  // document.getElementById("savedQuotesList").innerHTML = savedQuotes.map(...).join("");
+  const savedQuotesList = document.getElementById("savedQuotesList");
+  savedQuotesList.innerHTML = "";
+  savedQuotes.forEach(q => {
+    const li = document.createElement("li");
+    const row = document.createElement("div");
+    row.className = "quote-sidebar-row";
+    const mainBtn = document.createElement("button");
+    mainBtn.textContent = q.projectNameNumber || "(No Project Name)";
+    mainBtn.className = "sidebar-load-btn";
+    mainBtn.style.background = "none";
+    mainBtn.style.border = "none";
+    mainBtn.style.padding = "0";
+    mainBtn.style.color = "#003366";
+    mainBtn.style.fontWeight = "600";
+    mainBtn.style.fontSize = "1.04em";
+    mainBtn.style.cursor = "pointer";
+    mainBtn.onclick = () => loadQuoteById(q.id);
+    row.appendChild(mainBtn);
+    const delBtn = document.createElement("button");
+    delBtn.className = "sidebar-delete-btn";
+    delBtn.title = "Delete";
+    delBtn.innerHTML = "&#10005;";
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm("Delete this saved quote? This can't be undone.")) {
+        db.collection("quotes").doc(q.id).delete().then(() => {
+          savedQuotes = savedQuotes.filter(qq => qq.id !== q.id);
+          renderSidebar();
+          showNotification("Quote deleted.", "success");
+        }).catch(err => {
+          showNotification("Failed to delete quote.", "error");
+        });
+      }
+    };
+    row.appendChild(delBtn);
+    li.appendChild(row);
+    const meta = document.createElement("div");
+    meta.className = "quote-sidebar-meta";
+    let status = q.quoteStatus || "Draft";
+    let who = q.lastEditedBy || "";
+    let when = q.lastEditedAt && q.lastEditedAt.toDate ? q.lastEditedAt.toDate() : null;
+    let whenStr = when ? when.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+    meta.innerHTML = `<div>Status: <b>${status}</b></div><div>Last edited by: <b>${who}</b></div>${whenStr ? `<div>${whenStr}</div>` : ""}`;
+    li.appendChild(meta);
+    savedQuotesList.appendChild(li);
+  });
+  const templateList = document.getElementById("templateList");
+  templateList.innerHTML = "";
+  templates.forEach(t => {
+    const li = document.createElement("li");
+    const row = document.createElement("div");
+    row.className = "quote-sidebar-row";
+    const mainBtn = document.createElement("button");
+    mainBtn.textContent = t.templateName || "(No Template Name)";
+    mainBtn.className = "sidebar-load-btn";
+    mainBtn.style.background = "none";
+    mainBtn.style.border = "none";
+    mainBtn.style.padding = "0";
+    mainBtn.style.color = "#003366";
+    mainBtn.style.fontWeight = "600";
+    mainBtn.style.fontSize = "1.04em";
+    mainBtn.style.cursor = "pointer";
+    mainBtn.onclick = () => loadTemplateById(t.id);
+    row.appendChild(mainBtn);
+    const delBtn = document.createElement("button");
+    delBtn.className = "sidebar-delete-btn";
+    delBtn.title = "Delete";
+    delBtn.innerHTML = "&#10005;";
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm("Delete this template? This can't be undone.")) {
+        db.collection("templates").doc(t.id).delete().then(() => {
+          templates = templates.filter(tt => tt.id !== t.id);
+          renderSidebar();
+          showNotification("Template deleted.", "success");
+        }).catch(err => {
+          showNotification("Failed to delete template.", "error");
+        });
+      }
+    };
+    row.appendChild(delBtn);
+    li.appendChild(row);
+    const meta = document.createElement("div");
+    meta.className = "quote-sidebar-meta";
+    let who = t.lastEditedBy || "";
+    let when = t.lastEditedAt && t.lastEditedAt.toDate ? t.lastEditedAt.toDate() : null;
+    let whenStr = when ? when.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+    meta.innerHTML = `<div>Last edited by: <b>${who}</b></div>${whenStr ? `<div>${whenStr}</div>` : ""}`;
+    li.appendChild(meta);
+    templateList.appendChild(li);
+  });
 }
-
-// Show/hide sidebar
 document.getElementById("loadQuoteBarBtn").onclick = function() {
+  loadQuotesAndTemplates().then(renderSidebar);
   document.getElementById("loadQuoteSidebar").style.display = "block";
 };
-
 document.getElementById("closeLoadQuoteSidebarBtn").onclick = function() {
   document.getElementById("loadQuoteSidebar").style.display = "none";
 };
-
-// ------------- ACTION BUTTONS -------------
+async function loadQuoteById(id) {
+  try {
+    const doc = await db.collection("quotes").doc(id).get();
+    if (!doc.exists) throw new Error("Quote not found");
+    const q = doc.data();
+    document.getElementById("projectNameNumber").value = q.projectNameNumber || "";
+    document.getElementById("quoteStatusSelector").value = q.quoteStatus || "Draft";
+    document.getElementById("discountPercent").value = q.discountPercent || 0;
+    document.getElementById("shippingPercent").value = q.shippingPercent || 0;
+    document.getElementById("salesTaxPercent").value = q.salesTaxPercent || 0;
+    document.getElementById("sowFullOutputText").value = q.sowText || "";
+    window.quoteItems = Array.isArray(q.quoteItems) ? q.quoteItems : [];
+    window.laborSections = Array.isArray(q.laborSections) ? q.laborSections : [];
+    activeQuoteId = id;
+    activeTemplateId = null;
+    renderQuoteTable();
+    renderLaborSections();
+    updateQuoteSummary();
+    updateGrandTotals();
+    document.getElementById("loadQuoteSidebar").style.display = "none";
+    showNotification("Quote loaded.", "success");
+  } catch (e) {
+    showNotification("Failed to load quote.", "error");
+  }
+}
+async function loadTemplateById(id) {
+  try {
+    const doc = await db.collection("templates").doc(id).get();
+    if (!doc.exists) throw new Error("Template not found");
+    const t = doc.data();
+    document.getElementById("projectNameNumber").value = t.templateName || "";
+    document.getElementById("quoteStatusSelector").value = "Draft";
+    document.getElementById("discountPercent").value = t.discountPercent || 0;
+    document.getElementById("shippingPercent").value = t.shippingPercent || 0;
+    document.getElementById("salesTaxPercent").value = t.salesTaxPercent || 0;
+    document.getElementById("sowFullOutputText").value = t.sowText || "";
+    window.quoteItems = Array.isArray(t.quoteItems) ? t.quoteItems : [];
+    window.laborSections = Array.isArray(t.laborSections) ? t.laborSections : [];
+    activeQuoteId = null;
+    activeTemplateId = id;
+    renderQuoteTable();
+    renderLaborSections();
+    updateQuoteSummary();
+    updateGrandTotals();
+    document.getElementById("loadQuoteSidebar").style.display = "none";
+    showNotification("Template loaded.", "success");
+  } catch (e) {
+    showNotification("Failed to load template.", "error");
+  }
+}
 document.getElementById("saveQuoteBtn").onclick = saveQuote;
 document.getElementById("saveQuoteBarBtn").onclick = saveQuote;
-function saveQuote() {
-  // TODO: Save to Firestore
-  alert("Quote saved! (implement Firestore logic)");
+async function saveQuote() {
+  try {
+    const projectNameNumber = document.getElementById("projectNameNumber").value.trim();
+    const quoteStatus = document.getElementById("quoteStatusSelector").value;
+    const discountPercent = parseFloat(document.getElementById("discountPercent").value) || 0;
+    const shippingPercent = parseFloat(document.getElementById("shippingPercent").value) || 0;
+    const salesTaxPercent = parseFloat(document.getElementById("salesTaxPercent").value) || 0;
+    const sowText = document.getElementById("sowFullOutputText").value;
+    const quoteData = {
+      projectNameNumber,
+      quoteStatus,
+      discountPercent,
+      shippingPercent,
+      salesTaxPercent,
+      sowText,
+      quoteItems: JSON.parse(JSON.stringify(window.quoteItems)),
+      laborSections: JSON.parse(JSON.stringify(window.laborSections)),
+      lastEditedBy: currentUser ? currentUser.email : 'unknown',
+      lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    let quoteId = activeQuoteId;
+    let isNew = false;
+    if (!quoteId) {
+      const docRef = await db.collection("quotes").add(quoteData);
+      quoteId = docRef.id;
+      activeQuoteId = quoteId;
+      isNew = true;
+    } else {
+      await db.collection("quotes").doc(quoteId).set(quoteData, { merge: true });
+    }
+    await loadQuotesAndTemplates();
+    renderSidebar();
+    showNotification(isNew ? "Quote saved successfully!" : "Quote updated successfully!", "success");
+  } catch (e) {
+    showNotification("Failed to save quote: " + (e.message || e), "error");
+    console.error("Save quote error:", e);
+  }
 }
-
+document.getElementById("saveAsTemplateBarBtn").onclick = saveAsTemplatePrompt;
+async function saveAsTemplatePrompt() {
+  const templateName = prompt("Enter a name for this template:");
+  if (!templateName) return;
+  try {
+    const discountPercent = parseFloat(document.getElementById("discountPercent").value) || 0;
+    const shippingPercent = parseFloat(document.getElementById("shippingPercent").value) || 0;
+    const salesTaxPercent = parseFloat(document.getElementById("salesTaxPercent").value) || 0;
+    const sowText = document.getElementById("sowFullOutputText").value;
+    const templateData = {
+      templateName,
+      discountPercent,
+      shippingPercent,
+      salesTaxPercent,
+      sowText,
+      quoteItems: JSON.parse(JSON.stringify(window.quoteItems)),
+      laborSections: JSON.parse(JSON.stringify(window.laborSections)),
+      lastEditedBy: currentUser ? currentUser.email : 'unknown',
+      lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection("templates").add(templateData);
+    await loadQuotesAndTemplates();
+    renderSidebar();
+    showNotification(`Template "${templateName}" saved successfully!`, "success");
+  } catch (e) {
+    showNotification("Failed to save template: " + (e.message || e), "error");
+  }
+}
+document.getElementById("newQuoteBarBtn").onclick = function() {
+  if (
+    window.quoteItems.length > 0 ||
+    (window.laborSections && window.laborSections.some(s => s.numTechs > 0 || s.numSubs > 0))
+  ) {
+    if (!confirm("Are you sure you want to start a new quote? All unsaved changes will be lost.")) return;
+  }
+  document.getElementById("projectNameNumber").value = "";
+  document.getElementById("quoteStatusSelector").value = "Draft";
+  document.getElementById("discountPercent").value = 0;
+  document.getElementById("shippingPercent").value = 5;
+  document.getElementById("salesTaxPercent").value = 8;
+  document.getElementById("sowFullOutputText").value = "";
+  window.quoteItems = [];
+  window.laborSections = [];
+  activeQuoteId = null;
+  activeTemplateId = null;
+  renderQuoteTable();
+  renderLaborSections();
+  updateQuoteSummary();
+  updateGrandTotals();
+  showNotification("Ready for a new quote!", "success");
+};
+function showNotification(msg, type="success") {
+  let notif = document.getElementById("globalNotification");
+  if (!notif) {
+    notif = document.createElement("div");
+    notif.id = "globalNotification";
+    notif.style.position = "fixed";
+    notif.style.top = "24px";
+    notif.style.right = "24px";
+    notif.style.background = (type === "success" ? "#28a745" : "#dc3545");
+    notif.style.color = "#fff";
+    notif.style.padding = "15px 28px";
+    notif.style.borderRadius = "8px";
+    notif.style.fontWeight = "600";
+    notif.style.fontSize = "1.08rem";
+    notif.style.zIndex = "9999";
+    notif.style.boxShadow = "0 2px 12px #0002";
+    document.body.appendChild(notif);
+  }
+  notif.innerText = msg;
+  notif.style.display = "block";
+  notif.style.background = (type === "success" ? "#28a745" : "#dc3545");
+  setTimeout(() => { notif.style.display = "none"; }, 2300);
+}
 document.getElementById("printQuoteBtn").onclick = function() {
   window.print();
 };
-
 document.getElementById("downloadPdfBtn").onclick = function() {
-  // TODO: Use jsPDF to export quote PDF
   alert("Download PDF coming soon!");
 };
 
-// ------------- SOW LOGIC -------------
-document.getElementById("sowAiPromptText").oninput = function() {
-  // Optionally, enable AI drafting button
-};
-document.getElementById("draftFullSowWithAiBtn").onclick = function() {
-  // TODO: Integrate with AI for SOW generation
-  document.getElementById("sowFullOutputText").value = "AI-generated SOW goes here. (Integrate your AI.)";
-};
+// ------------- SCOPE OF WORK (AI PAGE) -------------
 
-// ------------- NAVIGATION TABS -------------
-function showMainSections() {
-  document.getElementById("sow-editor-section").style.display = "none";
-  document.getElementById("project-info").style.display = "";
-  document.getElementById("item-selector").style.display = "";
-  document.getElementById("item-preview").style.display = "";
-  document.getElementById("quote-display").style.display = "";
-  document.getElementById("labor-section").style.display = "";
-  document.getElementById("grand-totals-section").style.display = "";
-  document.getElementById("quote-actions-final").style.display = "";
+function initTinyMCE() {
+  if (window.tinymce) {
+    tinymce.init({
+      selector: "#sowFullOutputText",
+      menubar: true,
+      plugins: "lists link table autoresize code image charmap preview searchreplace advlist anchor insertdatetime media", // <--- no paste!
+      toolbar: "undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | fontselect fontsizeselect formatselect | forecolor backcolor | cut copy | bullist numlist outdent indent | link image media table | blockquote subscript superscript | removeformat | preview code",
+      min_height: 300,
+      max_height: 800,
+      branding: false,
+      setup: function (editor) {
+        editor.on("init", () => {
+          editor.setContent(document.getElementById("sowFullOutputText").value);
+        });
+        editor.on("change", () => {
+          document.getElementById("sowFullOutputText").value = editor.getContent();
+        });
+      }
+    });
+  }
+}
+// --- Modern mic icon and recording logic ---
+function injectMicIcon(button, isListening = false) {
+  // Material Design modern mic SVG, dynamically colored
+  button.innerHTML = `
+    <svg class="mic-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" fill="none"/>
+      <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"
+            fill="${isListening ? '#fff' : '#0059b3'}"/>
+      <path d="M19 13c0 3.31-2.69 6-6 6s-6-2.69-6-6h2a4 4 0 0 0 8 0h2z"
+            fill="${isListening ? '#fff' : '#0059b3'}"/>
+      <rect x="11" y="19" width="2" height="3" rx="1"
+            fill="${isListening ? '#fff' : '#0059b3'}"/>
+    </svg>
+  `;
 }
 
-function showSowSection() {
-  document.getElementById("sow-editor-section").style.display = "";
-  document.getElementById("project-info").style.display = "none";
-  document.getElementById("item-selector").style.display = "none";
-  document.getElementById("item-preview").style.display = "none";
-  document.getElementById("quote-display").style.display = "none";
-  document.getElementById("labor-section").style.display = "none";
-  document.getElementById("grand-totals-section").style.display = "none";
-  document.getElementById("quote-actions-final").style.display = "none";
+function setupGenerateButtonState(textareaId, buttonId) {
+  const textarea = document.getElementById(textareaId);
+  const button = document.getElementById(buttonId);
+  if (!textarea || !button) return;
+  // Initial state
+  button.disabled = !textarea.value.trim();
+
+  textarea.addEventListener('input', () => {
+    button.disabled = !textarea.value.trim();
+  });
 }
+
+function setupMicButton(btnId, textareaId, generateBtnId) {
+  const btn = document.getElementById(btnId); // Mic button
+  const genBtn = document.getElementById(generateBtnId); // Generate button
+  if (!btn || !genBtn) return;
+
+  let recognition = null;
+  let listening = false;
+  injectMicIcon(btn, false);
+
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    btn.style.display = "none";
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  let finalTranscript = "";
+
+  btn.onclick = function () {
+    if (listening) return;
+    btn.classList.add("listening");
+    injectMicIcon(btn, true);
+    listening = true;
+    finalTranscript = document.getElementById(textareaId).value;
+    recognition.start();
+  };
+
+  recognition.onresult = function (event) {
+    let interimTranscript = "";
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      let transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += (finalTranscript && !finalTranscript.endsWith(' ') ? ' ' : '') + transcript;
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+    const ta = document.getElementById(textareaId);
+    if (ta) {
+      ta.value = finalTranscript + interimTranscript;
+      // ---- ADD THIS SECTION ----
+      // Manually dispatch an 'input' event to trigger the button state update
+      const inputEvent = new Event('input', {
+        bubbles: true,
+        cancelable: true,
+      });
+      ta.dispatchEvent(inputEvent);
+      // ---- END OF ADDED SECTION ----
+    }
+  };
+
+  recognition.onerror = function () {
+    btn.classList.remove("listening");
+    injectMicIcon(btn, false);
+    listening = false;
+  };
+
+  recognition.onend = function () {
+    if (listening) recognition.start();
+  };
+
+  genBtn.onclick = function () {
+    if (listening) {
+      recognition.stop();
+      btn.classList.remove("listening");
+      injectMicIcon(btn, false);
+      listening = false;
+    }
+    if (btnId === "sowMicBtn") sowAiGenerate();
+    if (btnId === "taskListMicBtn") taskListAiGenerate();
+  };
+}
+
+function showAiOverlay(msg) {
+  const overlay = document.getElementById("aiOverlay");
+  const msgDiv = document.getElementById("aiOverlayMsg");
+  msgDiv.innerText = msg;
+  overlay.style.display = "flex";
+}
+
+function hideAiOverlay() {
+  document.getElementById("aiOverlay").style.display = "none";
+}
+
+async function sowAiGenerate() {
+  showAiOverlay("AI is generating your Scope of Work...");
+  const prompt = document.getElementById("sowAiPromptText").value || "";
+  const quoteJson = JSON.stringify(window.quoteItems || []);
+  const laborJson = JSON.stringify(window.laborSections || []);
+  setTimeout(() => {
+    let text = `<h3>Scope of Work</h3>
+      <ul>
+        <li>Provide and install AV equipment as listed in the proposal.</li>
+        <li>Perform all labor related to system design, programming, prewire, and installation.</li>
+        <li>Ensure all equipment is tested and system is fully operational.</li>
+        <li>Provide client training and project documentation.</li>
+      </ul>
+      <p><b>Prompt:</b> ${prompt ? prompt : "(none)"}.</p>
+      <p><i>(Auto-generated based on equipment and labor in quote.)</i></p>
+    `;
+    if (window.tinymce && tinymce.get("sowFullOutputText")) tinymce.get("sowFullOutputText").setContent(text);
+    document.getElementById("sowFullOutputText").value = text;
+    hideAiOverlay();
+  }, 2100);
+}
+document.getElementById("downloadSowPdfBtn").onclick = function() {
+  const doc = new jspdf.jsPDF();
+  let htmlContent = (window.tinymce && tinymce.get("sowFullOutputText")) ? tinymce.get("sowFullOutputText").getContent() : document.getElementById("sowFullOutputText").value;
+  doc.html(htmlContent, {
+    callback: function (d) { d.save("Scope-of-Work.pdf"); },
+    margin: [15, 15, 15, 15],
+    autoPaging: 'text',
+    html2canvas: { scale: 0.7 }
+  });
+};
+
+// ----- TASK LIST (AI PAGE) -----
+function renderTaskListTable() {
+  const tbody = document.getElementById("taskListTableBody");
+  tbody.innerHTML = "";
+  (window.taskList || []).forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    let tdCat = document.createElement("td");
+    tdCat.innerHTML = `<input type="text" value="${row.category || ""}" onchange="window.taskList[${idx}].category=this.value">`;
+    tr.appendChild(tdCat);
+    let tdDesc = document.createElement("td");
+    tdDesc.innerHTML = `<input type="text" value="${row.description || ""}" onchange="window.taskList[${idx}].description=this.value">`;
+    tr.appendChild(tdDesc);
+    let tdTime = document.createElement("td");
+    tdTime.innerHTML = `<input type="text" value="${row.estimatedTime || ""}" onchange="window.taskList[${idx}].estimatedTime=this.value">`;
+    tr.appendChild(tdTime);
+    let tdRemove = document.createElement("td");
+    tdRemove.innerHTML = `<button class="remove-task-btn" onclick="removeTaskRow(${idx})">✕</button>`;
+    tr.appendChild(tdRemove);
+    tbody.appendChild(tr);
+  });
+}
+function removeTaskRow(idx) {
+  window.taskList.splice(idx, 1);
+  renderTaskListTable();
+}
+document.getElementById("addTaskRowBtn").onclick = function() {
+  window.taskList.push({ category: "", description: "", estimatedTime: "" });
+  renderTaskListTable();
+};
+async function taskListAiGenerate() {
+  showAiOverlay("AI is generating your Task List...");
+  const prompt = document.getElementById("taskListAiPromptText").value || "";
+  const quoteJson = JSON.stringify(window.quoteItems || []);
+  const laborJson = JSON.stringify(window.laborSections || []);
+  setTimeout(() => {
+    window.taskList = [
+      { category: "Pre Project Prep", description: "Review plans and equipment list with project manager.", estimatedTime: "2 hrs" },
+      { category: "Cable Pulls", description: "Pull all required cabling as per system design.", estimatedTime: "6 hrs" },
+      { category: "Rack Building", description: "Assemble and wire all AV racks.", estimatedTime: "5 hrs" },
+      { category: "Installation", description: "Install displays, speakers, and all listed equipment.", estimatedTime: "8 hrs" },
+      { category: "Programming", description: "Program system controllers and test system functionality.", estimatedTime: "4 hrs" },
+      { category: "Client Training", description: "Train client on use of new AV system.", estimatedTime: "1 hr" }
+    ];
+    renderTaskListTable();
+    hideAiOverlay();
+  }, 1800);
+}
+document.getElementById("downloadTaskListPdfBtn").onclick = function() {
+  const doc = new jspdf.jsPDF();
+  doc.setFontSize(14);
+  doc.text("Project Task List", 14, 18);
+  doc.setFontSize(10);
+  doc.autoTable({
+    head: [["Category", "Task Description", "Estimated Time"]],
+    body: (window.taskList || []).map(row => [row.category, row.description, row.estimatedTime]),
+    startY: 26,
+    margin: { left: 10, right: 10 }
+  });
+  doc.save("Task-List.pdf");
+};
+
 
 // ------------- SPEC SHEET MODAL -------------
 document.getElementById("viewSpecSheetsBtn").onclick = function() {
@@ -870,7 +1267,214 @@ document.querySelectorAll(".modal-close-button").forEach(btn => {
   };
 });
 
+// ------------- FOOTER YEAR -------------
+function updateFooterYear() {
+  if (document.getElementById("currentYear"))
+    document.getElementById("currentYear").innerText = (new Date()).getFullYear();
+}
+
+// Show/Hide Add Product Modal
+document.getElementById("addProductBarBtn").onclick = function() {
+  document.getElementById("addProductModal").style.display = "flex";
+  document.getElementById("addProductStatus").style.display = "none";
+  document.getElementById("addProductForm").reset();
+};
+document.getElementById("closeAddProductModalBtn").onclick = function() {
+  document.getElementById("addProductModal").style.display = "none";
+};
+
+// Add Product Form Submission
+document.getElementById("addProductForm").onsubmit = async function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {};
+  // Collect all fields
+  Array.from(form.elements).forEach(input => {
+    if (input.name) {
+      if (["msrp","map","costPrice"].includes(input.name)) {
+        data[input.name] = input.value ? parseFloat(input.value) : null;
+      } else {
+        data[input.name] = input.value;
+      }
+    }
+  });
+  // Defensive: required fields
+  if (!data.productName || !data.productNumber || !data.brand || !data.costPrice) {
+    showAddProductStatus("Required fields missing.", false);
+    return;
+  }
+  try {
+    await db.collection("products").add(data);
+    showAddProductStatus("Product added successfully!", true);
+    // Optionally reload products for dropdowns, etc.
+    await loadProducts();
+    setTimeout(() => {
+      document.getElementById("addProductModal").style.display = "none";
+    }, 900);
+  } catch (err) {
+    showAddProductStatus("Failed to add product: " + err.message, false);
+  }
+};
+function showAddProductStatus(msg, success) {
+  const el = document.getElementById("addProductStatus");
+  el.innerText = msg;
+  el.style.display = "block";
+  el.style.color = success ? "#28a745" : "#dc3545";
+}
+
+// --- PRODUCT LIBRARY: Brand Filter and Product Table Population ---
+
+// Load unique brands into the product library brand filter
+async function loadBrandFilterOptions() {
+  const brandSelect = document.getElementById('brandFilter');
+  if (!brandSelect) return;
+  brandSelect.innerHTML = '<option value="">Select a brand</option>';
+  try {
+    const snapshot = await db.collection('products').get();
+    // Get unique, sorted brands
+    const brands = Array.from(new Set(snapshot.docs.map(doc => (doc.data().brand || "").trim()).filter(Boolean))).sort();
+    for (let brand of brands) {
+      let opt = document.createElement('option');
+      opt.value = brand;
+      opt.textContent = brand;
+      brandSelect.appendChild(opt);
+    }
+  } catch (err) {
+    brandSelect.innerHTML = '<option value="">Error loading brands</option>';
+    console.error("Error loading brands:", err);
+  }
+}
+
+// When brand is selected, load and display products for that brand, alphabetically
+document.getElementById('brandFilter').onchange = async function() {
+  const brand = this.value;
+  const tbody = document.querySelector('#productLibraryTable tbody');
+  tbody.innerHTML = '';
+  if (!brand) return;
+  try {
+    const snapshot = await db.collection('products').where('brand', '==', brand).get();
+    // Alphabetical order by productName
+    const rows = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No products found for this brand.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(prod => `
+  <tr>
+    <td>${prod.brand || ''}</td>
+    <td>${prod.productName || ''}</td>
+    <td>${prod.productNumber || ''}</td>
+    <td>${typeof prod.costPrice === "number" ? `$${prod.costPrice.toFixed(2)}` : ''}</td>
+    <td>${typeof prod.map === "number" ? `$${prod.map.toFixed(2)}` : ''}</td>
+    <td>${typeof prod.msrp === "number" ? `$${prod.msrp.toFixed(2)}` : ''}</td>
+    <td><button class="editProductBtn" data-id="${prod.id}">Edit</button></td>
+    <td><button class="deleteProductBtn" data-id="${prod.id}" title="Delete"><span class="delete-x-icon">&times;</span></button></td>
+  </tr>
+`).join('');
+    attachProductTableEventHandlers();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="10" style="color:red;">Error loading products.</td></tr>`;
+    console.error("Error loading products for brand:", err);
+  }
+};
+
+// Attach edit/delete button event handlers for the loaded table
+function attachProductTableEventHandlers() {
+  // Edit button
+  document.querySelectorAll('.editProductBtn').forEach(btn => {
+    btn.onclick = async function() {
+      const prodId = this.getAttribute('data-id');
+      const doc = await db.collection('products').doc(prodId).get();
+      if (doc.exists) openEditProductModal(prodId, doc.data());
+    };
+  });
+  // Delete button
+  document.querySelectorAll('.deleteProductBtn').forEach(btn => {
+    btn.onclick = async function() {
+      const prodId = this.getAttribute('data-id');
+      if (confirm('Are you sure you want to delete this product?')) {
+        await db.collection('products').doc(prodId).delete();
+        // Refresh table
+        document.getElementById('brandFilter').onchange();
+      }
+    };
+  });
+}
+
+// Open the Add Product modal for editing (prefill form)
+function openEditProductModal(prodId, data) {
+  const modal = document.getElementById("addProductModal");
+  const form = document.getElementById("addProductForm");
+  modal.style.display = "flex";
+  // Prefill all fields
+  form.productName.value = data.productName || '';
+  form.productNumber.value = data.productNumber || '';
+  form.brand.value = data.brand || '';
+  form.category.value = data.category || '';
+  form.type.value = data.type || '';
+  form.msrp.value = (typeof data.msrp === "number") ? data.msrp : '';
+  form.map.value = (typeof data.map === "number") ? data.map : '';
+  form.costPrice.value = (typeof data.costPrice === "number") ? data.costPrice : '';
+  form.imageURL.value = data.imageURL || '';
+  form.specSheetURL.value = data.specSheetURL || '';
+  form.description.value = data.description || '';
+  // Store the id for editing (hidden input or data attribute)
+  form.setAttribute('data-edit-id', prodId);
+  document.getElementById("addProductStatus").style.display = "none";
+}
+
+// Handle Add/Edit Product form submission
+const origAddProductFormHandler = document.getElementById("addProductForm").onsubmit;
+document.getElementById("addProductForm").onsubmit = async function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {};
+  Array.from(form.elements).forEach(input => {
+    if (input.name) {
+      if (["msrp","map","costPrice"].includes(input.name)) {
+        data[input.name] = input.value ? parseFloat(input.value) : null;
+      } else {
+        data[input.name] = input.value;
+      }
+    }
+  });
+  if (!data.productName || !data.productNumber || !data.brand || !data.costPrice) {
+    showAddProductStatus("Required fields missing.", false);
+    return;
+  }
+  const editId = form.getAttribute('data-edit-id');
+  try {
+    if (editId) {
+      await db.collection("products").doc(editId).update(data);
+      showAddProductStatus("Product updated successfully!", true);
+      form.removeAttribute('data-edit-id');
+    } else {
+      await db.collection("products").add(data);
+      showAddProductStatus("Product added successfully!", true);
+    }
+    // Refresh product list if in Product Library
+    if (document.getElementById('productLibrarySection').style.display !== "none") {
+      document.getElementById('brandFilter').onchange();
+    }
+    await loadProducts(); // For other dropdowns
+    setTimeout(() => {
+      document.getElementById("addProductModal").style.display = "none";
+    }, 900);
+  } catch (err) {
+    showAddProductStatus("Failed to save product: " + err.message, false);
+  }
+};
+
 // ------------- INIT ON LOAD -------------
 window.onload = function() {
   updateFooterYear();
+  initTinyMCE();
+  injectMicIcon(document.getElementById("sowMicBtn"), false);
+  injectMicIcon(document.getElementById("taskListMicBtn"), false);
+  setupMicButton("sowMicBtn", "sowAiPromptText", "draftFullSowWithAiBtn");
+  setupMicButton("taskListMicBtn", "taskListAiPromptText", "generateTaskListBtn");
+  setupGenerateButtonState("sowAiPromptText", "draftFullSowWithAiBtn");
+  setupGenerateButtonState("taskListAiPromptText", "generateTaskListBtn");
 };
