@@ -1030,16 +1030,7 @@ h3, h4 {
     background: rgba(0,0,0,0.5);
     padding-top: 40px;
 }
-.modal-content {
-    background: #fff;
-    margin: 5% auto;
-    padding: 25px;
-    border: 1px solid #e4e9ef;
-    width: 92%;
-    max-width: 480px;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-}
+
 .modal-close-button {
     color: #aaa;
     float: right;
@@ -1689,7 +1680,6 @@ input[type="submit"],
 
 /* Modal window style */
 #editCustomerModal {
-  background: #fff;
   border-radius: 12px;
   box-shadow: 0 6px 32px rgba(0,0,0,0.18);
   padding: 32px 28px 24px 28px;
@@ -1740,7 +1730,6 @@ input[type="submit"],
 #editCustomerModal input[type="email"]:focus {
   border-color: #1976d2;
   outline: none;
-  background: #fff;
 }
 
 #editCustomerModal .modal-actions {
@@ -1782,21 +1771,17 @@ input[type="submit"],
   background: #e4e7ea;
 }
 
-/* Modal overlay - covers the viewport, centers the modal */
 .modal {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   width: 100vw; height: 100vh;
-  background: rgba(36, 54, 66, 0.08); /* subtle overlay */
+  background: rgba(36, 54, 66, 0.10); /* subtle dark overlay */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  /* No padding, no extra height here! */
 }
 
-/* Modal content box */
-#editCustomerModal > form,
 .modal-content {
   background: #fff;
   border-radius: 12px;
@@ -1804,8 +1789,6 @@ input[type="submit"],
   padding: 32px 28px 24px 28px;
   max-width: 540px;
   width: 100%;
-  /* Remove any height: 100% or height: 100vh here! */
   max-height: 90vh;
   overflow-y: auto;
-  margin: 0;
 }
