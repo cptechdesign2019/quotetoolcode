@@ -40,33 +40,59 @@ const laborConfig = [
   { id: "installation", label: "Installation", showSubs: true, defaultRate: 100 }
 ];
 
-// ----------- TAB NAVIGATION -----------
-
+// ---- MainTabs Navigation with Customer Login Security ----
 const mainTabs = [
   { btn: "tabQuoteBuilderBtn", page: "tabQuoteBuilderPage" },
+  { btn: "tabProductLibraryBtn", page: "productLibrarySection" },
+  { btn: "tabCustomersBtn", page: "customers-page" },
   { btn: "tabScopeOfWorkBtn", page: "tabScopeOfWorkPage" },
   { btn: "tabTaskListBtn", page: "tabTaskListPage" }
 ];
 mainTabs.forEach(({ btn, page }) => {
   document.getElementById(btn).addEventListener("click", () => {
-    // Deactivate the Product Library tab and hide its section
-    document.getElementById("tabProductLibraryBtn").classList.remove("active");
-    document.getElementById("productLibrarySection").style.display = "none";
-
-    // Handle active state and visibility for the other main tabs and pages
+    // Security check for Customers tab
+    if (btn === "tabCustomersBtn") {
+      var user = firebase.auth().currentUser;
+      if (!user) {
+        document.getElementById("customersLoginEmail").value = "";
+        document.getElementById("customersLoginPassword").value = "";
+        document.getElementById("customersLoginError").style.display = "none";
+        document.getElementById("customersLoginModal").style.display = "flex";
+        return;
+      }
+    }
     mainTabs.forEach(({ btn: b, page: p }) => {
       document.getElementById(b).classList.toggle("active", b === btn);
       document.getElementById(p).style.display = (p === page ? "" : "none");
     });
-
-    // Special handling for TinyMCE if the Scope of Work tab is selected
-    if (page === "tabScopeOfWorkPage") {
-      setTimeout(() => {
-        if (window.tinymce && tinymce.get("sowFullOutputText")) tinymce.get("sowFullOutputText"); // Ensure editor is properly initialized/focused
-      }, 200);
-    }
+    if (page === "customers-page" && typeof loadCustomers === "function") loadCustomers();
+    if (page === "productLibrarySection" && typeof loadProducts === "function") loadProducts();
   });
 });
+
+// ---- Customers Login Modal Logic ----
+document.getElementById("customersModalLoginBtn").onclick = function() {
+  var email = document.getElementById("customersLoginEmail").value.trim();
+  var password = document.getElementById("customersLoginPassword").value;
+  var errorDiv = document.getElementById("customersLoginError");
+  errorDiv.style.display = "none";
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then(() => {
+      document.getElementById("customersLoginModal").style.display = "none";
+      mainTabs.forEach(({ btn: b, page: p }) => {
+        document.getElementById(b).classList.toggle("active", b === "tabCustomersBtn");
+        document.getElementById(p).style.display = (p === "customers-page" ? "" : "none");
+      });
+      if (typeof loadCustomers === "function") loadCustomers();
+    })
+    .catch(function(error) {
+      errorDiv.textContent = error.message;
+      errorDiv.style.display = "block";
+    });
+};
+document.getElementById("customersModalCancelBtn").onclick = function() {
+  document.getElementById("customersLoginModal").style.display = "none";
+};
 
 // ---- PRODUCT LIBRARY TAB LOGIC ----
 document.getElementById("tabProductLibraryBtn").addEventListener("click", () => {
@@ -1477,4 +1503,298 @@ window.onload = function() {
   setupMicButton("taskListMicBtn", "taskListAiPromptText", "generateTaskListBtn");
   setupGenerateButtonState("sowAiPromptText", "draftFullSowWithAiBtn");
   setupGenerateButtonState("taskListAiPromptText", "generateTaskListBtn");
+};
+
+// --- Customer Account Modal Logic (matching new modal HTML & companyNameGroup logic) ---
+
+// Globals for customer workflow
+window.selectedCustomerAccount = null;
+window.newCustomerType = null;
+window.selectedProjectName = "";
+
+// Utility: Reset all modal steps/fields
+function resetCustomerModal() {
+  document.getElementById("customerStep1").style.display = "";
+  document.getElementById("customerStep2").style.display = "none";
+  document.getElementById("addCustomerForm").style.display = "none";
+  document.getElementById("customerStep3").style.display = "none";
+  document.getElementById("customerSearchInput").value = "";
+  document.getElementById("customerSearchResults").innerHTML = "";
+
+  document.getElementById("customerFirstName").value = "";
+  document.getElementById("customerLastName").value = "";
+  document.getElementById("customerCompanyName").value = "";
+  document.getElementById("customerEmail").value = "";
+  document.getElementById("customerPhone").value = "";
+  document.getElementById("customerBillingAddress").value = "";
+  document.getElementById("customerProjectAddress").value = "";
+  document.getElementById("companyNameGroup").style.display = "none"; // Hide by default
+
+  window.selectedCustomerAccount = null;
+  window.newCustomerType = null;
+  window.selectedProjectName = "";
+}
+
+// Show modal
+function openCustomerModal() {
+  resetCustomerModal();
+  document.getElementById("customerAccountModal").style.display = "block";
+}
+
+// Hide modal
+function closeCustomerModal() {
+  document.getElementById("customerAccountModal").style.display = "none";
+}
+
+// --- Modal open/close events ---
+document.getElementById("newQuoteBarBtn").onclick = openCustomerModal;
+document.getElementById("closeCustomerModalBtn").onclick = closeCustomerModal;
+
+// --- Step 1: Search existing customers ---
+document.getElementById("customerSearchInput").oninput = async function() {
+  const searchVal = this.value.trim().toLowerCase();
+  const resultsList = document.getElementById("customerSearchResults");
+  resultsList.innerHTML = "";
+  if (!searchVal) return;
+
+  // Flexible search: match beginning of name/company or full text
+  const snap = await db.collection("customerAccounts")
+    .orderBy("firstName")
+    .limit(20)
+    .get();
+
+  let matches = [];
+  snap.forEach(doc => {
+    const c = doc.data();
+    const company = (c.companyName || "").toLowerCase();
+    const first = (c.firstName || "").toLowerCase();
+    const last = (c.lastName || "").toLowerCase();
+    if (
+      company.includes(searchVal) ||
+      (first + " " + last).includes(searchVal) ||
+      first.includes(searchVal) ||
+      last.includes(searchVal)
+    ) {
+      matches.push({ id: doc.id, ...c });
+    }
+  });
+
+  matches.slice(0, 10).forEach(c => {
+    const li = document.createElement("li");
+    li.textContent = c.type === "commercial" && c.companyName
+      ? `${c.companyName} (${c.firstName} ${c.lastName})`
+      : `${c.firstName} ${c.lastName}`;
+    li.onclick = function() {
+      Array.from(resultsList.children).forEach(x => x.classList.remove("selected"));
+      li.classList.add("selected");
+      window.selectedCustomerAccount = c;
+      // Move to project name step
+      document.getElementById("customerStep1").style.display = "none";
+      document.getElementById("customerStep3").style.display = "";
+      document.getElementById("projectNameInput").focus();
+    };
+    resultsList.appendChild(li);
+  });
+};
+
+// --- Step 1: Add new customer ---
+document.getElementById("addNewCustomerBtn").onclick = function() {
+  document.getElementById("customerStep1").style.display = "none";
+  document.getElementById("customerStep2").style.display = "";
+};
+
+// --- Step 2: Choose customer type ---
+document.getElementById("chooseResidentialBtn").onclick = function() {
+  window.newCustomerType = "residential";
+  showCustomerForm();
+};
+document.getElementById("chooseCommercialBtn").onclick = function() {
+  window.newCustomerType = "commercial";
+  showCustomerForm();
+};
+
+function showCustomerForm() {
+  document.getElementById("customerStep2").style.display = "none";
+  document.getElementById("addCustomerForm").style.display = "";
+  // Show/hide company name for commercial only
+  if (window.newCustomerType === "commercial") {
+    document.getElementById("companyNameGroup").style.display = "";
+    document.getElementById("customerCompanyName").required = true;
+  } else {
+    document.getElementById("companyNameGroup").style.display = "none";
+    document.getElementById("customerCompanyName").required = false;
+  }
+}
+
+// --- Step 2: Save new customer form ---
+document.getElementById("addCustomerForm").onsubmit = async function(e) {
+  e.preventDefault();
+  // Gather info
+  const firstName = document.getElementById("customerFirstName").value.trim();
+  const lastName = document.getElementById("customerLastName").value.trim();
+  const companyName = document.getElementById("customerCompanyName").value.trim();
+  const email = document.getElementById("customerEmail").value.trim();
+  const phone = document.getElementById("customerPhone").value.trim();
+  const billingAddress = document.getElementById("customerBillingAddress").value.trim();
+  const projectAddress = document.getElementById("customerProjectAddress").value.trim();
+  const type = window.newCustomerType;
+
+  // Keywords for search (for future improvements)
+  let keywords = [
+    firstName.toLowerCase(),
+    lastName.toLowerCase(),
+    ...(companyName ? [companyName.toLowerCase()] : [])
+  ];
+
+  // Save to Firestore
+  const docRef = await db.collection("customerAccounts").add({
+    firstName, lastName, companyName, email, phone, billingAddress, addresses: [projectAddress],
+    type,
+    created: firebase.firestore.FieldValue.serverTimestamp(),
+    searchKeywords: keywords
+  });
+  // Set as selected customer for this quote
+  window.selectedCustomerAccount = {
+    id: docRef.id, firstName, lastName, companyName, email, phone, billingAddress, addresses: [projectAddress], type
+  };
+  // Move to project name step
+  document.getElementById("addCustomerForm").style.display = "none";
+  document.getElementById("customerStep3").style.display = "";
+  document.getElementById("projectNameInput").focus();
+};
+
+// --- Step 3: Enter project name and create quote ---
+document.getElementById("createQuoteBtn").onclick = function() {
+  const projectName = document.getElementById("projectNameInput").value.trim();
+  if (!window.selectedCustomerAccount || !projectName) {
+    alert("Please select a customer and enter a project name.");
+    return;
+  }
+  window.selectedProjectName = projectName;
+  // Set project name in quote builder UI
+  document.getElementById("projectNameNumber").value = projectName;
+  // Optionally, store active customer/project for this quote for later use
+  window.activeCustomerForQuote = window.selectedCustomerAccount;
+  window.activeProjectName = projectName;
+  // Close modal
+  closeCustomerModal();
+};
+
+// When modal is closed, optional: reset
+document.getElementById("customerAccountModal").addEventListener("click", function(e) {
+  if (e.target === this) closeCustomerModal();
+});
+
+// ---- Customers Table Render & Actions ----
+function loadCustomers() {
+  const customersTableBody = document.querySelector("#customersTable tbody");
+  customersTableBody.innerHTML = "";
+  firebase.firestore().collection("customerAccounts").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const customer = doc.data();
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${customer.firstName || ""}</td>
+        <td>${customer.lastName || ""}</td>
+        <td>${customer.companyName || ""}</td>
+        <td>${customer.email || ""}</td>
+        <td>${customer.phone || ""}</td>
+        <td>${customer.billingAddress || ""}</td>
+        <td>
+          <button class="edit-customer-btn light-blue-btn" data-id="${doc.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 24 24" style="vertical-align:middle;">
+              <path d="M3 17.25V21h3.75l11.06-11.06-3.74-3.74L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.74 3.74 1.85-1.81z"/>
+            </svg>
+          </button>
+          <button class="delete-customer-btn light-red-btn" data-id="${doc.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 24 24" style="vertical-align:middle;">
+              <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11l4.89 4.89-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41l-4.89-4.89 4.89-4.89a1 1 0 0 0 0-1.41z"/>
+            </svg>
+          </button>
+        </td>
+      `;
+      customersTableBody.appendChild(row);
+    });
+  });
+}
+
+// ---- Edit Customer Modal Logic ----
+let currentCustomerEditId = null;
+document.addEventListener("click", function(e) {
+  const editBtn = e.target.closest(".edit-customer-btn");
+  if (editBtn) {
+    const customerId = editBtn.getAttribute("data-id");
+    currentCustomerEditId = customerId;
+    firebase.firestore().collection("customerAccounts").doc(customerId).get().then(doc => {
+      const c = doc.data();
+      document.getElementById("editCustomerFirstName").value = c.firstName || "";
+      document.getElementById("editCustomerLastName").value = c.lastName || "";
+      document.getElementById("editCustomerCompanyName").value = c.companyName || "";
+      document.getElementById("editCustomerEmail").value = c.email || "";
+      document.getElementById("editCustomerPhone").value = c.phone || "";
+      document.getElementById("editCustomerBillingAddress").value = c.billingAddress || "";
+      document.getElementById("editCustomerError").style.display = "none";
+      document.getElementById("editCustomerModal").style.display = "flex";
+    });
+  }
+
+  // Delete button handler (uses .closest for SVG clicks)
+  const delBtn = e.target.closest(".delete-customer-btn");
+  if (delBtn) {
+    customerToDeleteId = delBtn.getAttribute("data-id");
+    document.getElementById("deleteCustomerModal").style.display = "block";
+  }
+});
+
+// Save edits
+document.getElementById("editCustomerForm").onsubmit = function(e) {
+  e.preventDefault();
+  if (!currentCustomerEditId) return;
+  const updateData = {
+    firstName: document.getElementById("editCustomerFirstName").value.trim(),
+    lastName: document.getElementById("editCustomerLastName").value.trim(),
+    companyName: document.getElementById("editCustomerCompanyName").value.trim(),
+    email: document.getElementById("editCustomerEmail").value.trim(),
+    phone: document.getElementById("editCustomerPhone").value.trim(),
+    billingAddress: document.getElementById("editCustomerBillingAddress").value.trim()
+  };
+  firebase.firestore().collection("customerAccounts").doc(currentCustomerEditId)
+    .update(updateData)
+    .then(() => {
+      document.getElementById("editCustomerModal").style.display = "none";
+      loadCustomers();
+      currentCustomerEditId = null;
+    })
+    .catch(err => {
+      document.getElementById("editCustomerError").textContent = err.message;
+      document.getElementById("editCustomerError").style.display = "block";
+    });
+};
+document.getElementById("cancelEditCustomerBtn").onclick = function() {
+  document.getElementById("editCustomerModal").style.display = "none";
+  currentCustomerEditId = null;
+};
+document.getElementById("closeEditCustomerModalBtn").onclick = function() {
+  document.getElementById("editCustomerModal").style.display = "none";
+  currentCustomerEditId = null;
+};
+
+// ---- Delete Customer Modal Logic ----
+let customerToDeleteId = null;
+document.getElementById("confirmDeleteCustomerBtn").onclick = function() {
+  if (customerToDeleteId) {
+    firebase.firestore().collection("customerAccounts").doc(customerToDeleteId).delete().then(() => {
+      document.getElementById("deleteCustomerModal").style.display = "none";
+      loadCustomers();
+      customerToDeleteId = null;
+    });
+  }
+};
+document.getElementById("cancelDeleteCustomerBtn").onclick = function() {
+  document.getElementById("deleteCustomerModal").style.display = "none";
+  customerToDeleteId = null;
+};
+document.getElementById("closeDeleteCustomerModalBtn").onclick = function() {
+  document.getElementById("deleteCustomerModal").style.display = "none";
+  customerToDeleteId = null;
 };
