@@ -19,7 +19,13 @@ window.quoteItems = window.quoteItems || [];
 window.laborSections = window.laborSections || [];
 window.taskList = window.taskList || [];
 
+let isCustomersTabLoggedIn = false;
+
 let currentUser = null;
+// --- Listen for login state changes ---
+firebase.auth().onAuthStateChanged(user => {
+  isCustomersTabLoggedIn = !!user;
+
 let products = [];
 let filteredProducts = [];
 let selectedProduct = null;
@@ -40,7 +46,8 @@ const laborConfig = [
   { id: "installation", label: "Installation", showSubs: true, defaultRate: 100 }
 ];
 
-// ---- MainTabs Navigation with Customer Login Security ----
+// ----------- TAB NAVIGATION WITH CUSTOMER LOGIN SECURITY -----------
+
 const mainTabs = [
   { btn: "tabQuoteBuilderBtn", page: "tabQuoteBuilderPage" },
   { btn: "tabProductLibraryBtn", page: "productLibrarySection" },
@@ -48,51 +55,61 @@ const mainTabs = [
   { btn: "tabScopeOfWorkBtn", page: "tabScopeOfWorkPage" },
   { btn: "tabTaskListBtn", page: "tabTaskListPage" }
 ];
+
+// Add click handlers for all main navigation tabs
 mainTabs.forEach(({ btn, page }) => {
   document.getElementById(btn).addEventListener("click", () => {
-    // Security check for Customers tab
+    // Special security for Customers tab
     if (btn === "tabCustomersBtn") {
       var user = firebase.auth().currentUser;
       if (!user) {
+        // Reset login modal fields and show the modal
         document.getElementById("customersLoginEmail").value = "";
         document.getElementById("customersLoginPassword").value = "";
         document.getElementById("customersLoginError").style.display = "none";
         document.getElementById("customersLoginModal").style.display = "flex";
-        return;
+        return; // Do not show the customers page if not logged in
       }
     }
+    // Show the requested main section, hide others
     mainTabs.forEach(({ btn: b, page: p }) => {
       document.getElementById(b).classList.toggle("active", b === btn);
       document.getElementById(p).style.display = (p === page ? "" : "none");
     });
+    // Optional: load data for this tab
     if (page === "customers-page" && typeof loadCustomers === "function") loadCustomers();
     if (page === "productLibrarySection" && typeof loadProducts === "function") loadProducts();
   });
 });
 
-// ---- Customers Login Modal Logic ----
-document.getElementById("customersModalLoginBtn").onclick = function() {
-  var email = document.getElementById("customersLoginEmail").value.trim();
-  var password = document.getElementById("customersLoginPassword").value;
-  var errorDiv = document.getElementById("customersLoginError");
-  errorDiv.style.display = "none";
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .then(() => {
-      document.getElementById("customersLoginModal").style.display = "none";
-      mainTabs.forEach(({ btn: b, page: p }) => {
-        document.getElementById(b).classList.toggle("active", b === "tabCustomersBtn");
-        document.getElementById(p).style.display = (p === "customers-page" ? "" : "none");
-      });
-      if (typeof loadCustomers === "function") loadCustomers();
-    })
-    .catch(function(error) {
-      errorDiv.textContent = error.message;
-      errorDiv.style.display = "block";
-    });
-};
-document.getElementById("customersModalCancelBtn").onclick = function() {
-  document.getElementById("customersLoginModal").style.display = "none";
-};
+// ----------- LOGIN MODAL LOGIC FOR CUSTOMERS TAB -----------
+
+document.getElementById("tabCustomersBtn").addEventListener("click", function(e) {
+  if (!isCustomersTabLoggedIn) {
+    // Not logged in: show modal, don't switch tab
+    document.getElementById("customersLoginModal").style.display = "flex";
+    document.getElementById("customersLoginEmail").value = "";
+    document.getElementById("customersLoginPassword").value = "";
+    document.getElementById("customersLoginError").style.display = "none";
+    // Hide customers page if it's visible
+    document.getElementById("customers-page").style.display = "none";
+    // Deactivate tab
+    document.getElementById("tabCustomersBtn").classList.remove("active");
+    return;
+  }
+  // Logged in: show customers page and activate tab
+  document.getElementById("customers-page").style.display = "";
+  document.getElementById("tabCustomersBtn").classList.add("active");
+  // Hide other main pages/tabs as needed
+  ["tabQuoteBuilderPage","productLibrarySection","tabScopeOfWorkPage","tabTaskListPage"].forEach(id => {
+    if (id !== "customers-page") document.getElementById(id).style.display = "none";
+  });
+  ["tabQuoteBuilderBtn","tabProductLibraryBtn","tabScopeOfWorkBtn","tabTaskListBtn"].forEach(id => {
+    if (id !== "tabCustomersBtn") document.getElementById(id).classList.remove("active");
+  });
+  // Load customers table
+  if (typeof loadCustomers === "function") loadCustomers();
+});
 
 // ---- PRODUCT LIBRARY TAB LOGIC ----
 document.getElementById("tabProductLibraryBtn").addEventListener("click", () => {
@@ -1685,47 +1702,59 @@ document.getElementById("customerAccountModal").addEventListener("click", functi
   if (e.target === this) closeCustomerModal();
 });
 
-// ---- Customers Table Render & Actions ----
+// ----------- LOAD AND RENDER CUSTOMERS TABLE -----------
+
 function loadCustomers() {
-  const customersTableBody = document.querySelector("#customersTable tbody");
-  customersTableBody.innerHTML = "";
-  firebase.firestore().collection("customerAccounts").get().then(snapshot => {
-    snapshot.forEach(doc => {
-      const customer = doc.data();
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${customer.firstName || ""}</td>
-        <td>${customer.lastName || ""}</td>
-        <td>${customer.companyName || ""}</td>
-        <td>${customer.email || ""}</td>
-        <td>${customer.phone || ""}</td>
-        <td>${customer.billingAddress || ""}</td>
-        <td>
-          <button class="edit-customer-btn light-blue-btn" data-id="${doc.id}">
-            <svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 24 24" style="vertical-align:middle;">
-              <path d="M3 17.25V21h3.75l11.06-11.06-3.74-3.74L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.74 3.74 1.85-1.81z"/>
-            </svg>
-          </button>
-          <button class="delete-customer-btn light-red-btn" data-id="${doc.id}">
-            <svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 24 24" style="vertical-align:middle;">
-              <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11l4.89 4.89-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41l-4.89-4.89 4.89-4.89a1 1 0 0 0 0-1.41z"/>
-            </svg>
-          </button>
-        </td>
-      `;
-      customersTableBody.appendChild(row);
+  const tbody = document.querySelector("#customersTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+
+  firebase.firestore().collection("customerAccounts").get()
+    .then(snapshot => {
+      if (snapshot.empty) {
+        tbody.innerHTML = '<tr><td colspan="7">No customers found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = "";
+      snapshot.forEach(doc => {
+        const c = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${c.firstName || ""}</td>
+          <td>${c.lastName || ""}</td>
+          <td>${c.companyName || ""}</td>
+          <td>${c.email || ""}</td>
+          <td>${c.phone || ""}</td>
+          <td>${c.billingAddress || ""}</td>
+          <td>
+            <button class="edit-customer-btn" data-id="${doc.id}">Edit</button>
+            <button class="delete-customer-btn" data-id="${doc.id}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="7" style="color:#c33;">Error loading customers: ${err.message}</td></tr>`;
     });
-  });
 }
 
-// ---- Edit Customer Modal Logic ----
-let currentCustomerEditId = null;
-document.addEventListener("click", function(e) {
-  const editBtn = e.target.closest(".edit-customer-btn");
-  if (editBtn) {
-    const customerId = editBtn.getAttribute("data-id");
-    currentCustomerEditId = customerId;
-    firebase.firestore().collection("customerAccounts").doc(customerId).get().then(doc => {
+// ----------- EDIT CUSTOMER MODAL LOGIC -----------
+
+// Store the currently editing customer ID
+let currentEditingCustomerId = null;
+
+// Delegate click event for edit buttons in the customers table
+document.querySelector("#customersTable tbody").addEventListener("click", function(e) {
+  const btn = e.target.closest(".edit-customer-btn");
+  if (!btn) return;
+  const customerId = btn.getAttribute("data-id");
+  currentEditingCustomerId = customerId;
+  // Get customer data from Firestore
+  firebase.firestore().collection("customerAccounts").doc(customerId).get()
+    .then(doc => {
+      if (!doc.exists) return;
       const c = doc.data();
       document.getElementById("editCustomerFirstName").value = c.firstName || "";
       document.getElementById("editCustomerLastName").value = c.lastName || "";
@@ -1736,21 +1765,13 @@ document.addEventListener("click", function(e) {
       document.getElementById("editCustomerError").style.display = "none";
       document.getElementById("editCustomerModal").style.display = "flex";
     });
-  }
-
-  // Delete button handler (uses .closest for SVG clicks)
-  const delBtn = e.target.closest(".delete-customer-btn");
-  if (delBtn) {
-    customerToDeleteId = delBtn.getAttribute("data-id");
-    document.getElementById("deleteCustomerModal").style.display = "block";
-  }
 });
 
-// Save edits
+// Handle Save in Edit Customer modal
 document.getElementById("editCustomerForm").onsubmit = function(e) {
   e.preventDefault();
-  if (!currentCustomerEditId) return;
-  const updateData = {
+  if (!currentEditingCustomerId) return;
+  const updated = {
     firstName: document.getElementById("editCustomerFirstName").value.trim(),
     lastName: document.getElementById("editCustomerLastName").value.trim(),
     companyName: document.getElementById("editCustomerCompanyName").value.trim(),
@@ -1758,42 +1779,55 @@ document.getElementById("editCustomerForm").onsubmit = function(e) {
     phone: document.getElementById("editCustomerPhone").value.trim(),
     billingAddress: document.getElementById("editCustomerBillingAddress").value.trim()
   };
-  firebase.firestore().collection("customerAccounts").doc(currentCustomerEditId)
-    .update(updateData)
+  firebase.firestore().collection("customerAccounts").doc(currentEditingCustomerId)
+    .update(updated)
     .then(() => {
       document.getElementById("editCustomerModal").style.display = "none";
+      currentEditingCustomerId = null;
       loadCustomers();
-      currentCustomerEditId = null;
     })
     .catch(err => {
       document.getElementById("editCustomerError").textContent = err.message;
       document.getElementById("editCustomerError").style.display = "block";
     });
 };
-document.getElementById("cancelEditCustomerBtn").onclick = function() {
-  document.getElementById("editCustomerModal").style.display = "none";
-  currentCustomerEditId = null;
-};
+
+// Handle Cancel/Close in Edit Customer modal
+document.getElementById("cancelEditCustomerBtn").onclick =
 document.getElementById("closeEditCustomerModalBtn").onclick = function() {
   document.getElementById("editCustomerModal").style.display = "none";
-  currentCustomerEditId = null;
+  currentEditingCustomerId = null;
 };
 
-// ---- Delete Customer Modal Logic ----
+// ----------- DELETE CUSTOMER LOGIC -----------
+
 let customerToDeleteId = null;
+
+// Delegate click event for delete buttons in the customers table
+document.querySelector("#customersTable tbody").addEventListener("click", function(e) {
+  const btn = e.target.closest(".delete-customer-btn");
+  if (!btn) return;
+  customerToDeleteId = btn.getAttribute("data-id");
+  document.getElementById("deleteCustomerModal").style.display = "block";
+});
+
+// Confirm deletion
 document.getElementById("confirmDeleteCustomerBtn").onclick = function() {
   if (customerToDeleteId) {
-    firebase.firestore().collection("customerAccounts").doc(customerToDeleteId).delete().then(() => {
-      document.getElementById("deleteCustomerModal").style.display = "none";
-      loadCustomers();
-      customerToDeleteId = null;
-    });
+    firebase.firestore().collection("customerAccounts").doc(customerToDeleteId).delete()
+      .then(() => {
+        document.getElementById("deleteCustomerModal").style.display = "none";
+        customerToDeleteId = null;
+        loadCustomers();
+      })
+      .catch(err => {
+        alert("Error deleting customer: " + err.message);
+      });
   }
 };
-document.getElementById("cancelDeleteCustomerBtn").onclick = function() {
-  document.getElementById("deleteCustomerModal").style.display = "none";
-  customerToDeleteId = null;
-};
+
+// Cancel/close deletion modal
+document.getElementById("cancelDeleteCustomerBtn").onclick =
 document.getElementById("closeDeleteCustomerModalBtn").onclick = function() {
   document.getElementById("deleteCustomerModal").style.display = "none";
   customerToDeleteId = null;
