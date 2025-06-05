@@ -25,6 +25,7 @@ let currentUser = null;
 // --- Listen for login state changes ---
 firebase.auth().onAuthStateChanged(user => {
   isCustomersTabLoggedIn = !!user;
+});
 
 let products = [];
 let filteredProducts = [];
@@ -61,15 +62,16 @@ mainTabs.forEach(({ btn, page }) => {
   document.getElementById(btn).addEventListener("click", () => {
     // Special security for Customers tab
     if (btn === "tabCustomersBtn") {
-      var user = firebase.auth().currentUser;
-      if (!user) {
-        // Reset login modal fields and show the modal
-        document.getElementById("customersLoginEmail").value = "";
-        document.getElementById("customersLoginPassword").value = "";
-        document.getElementById("customersLoginError").style.display = "none";
-        document.getElementById("customersLoginModal").style.display = "flex";
-        return; // Do not show the customers page if not logged in
-      }
+      // Always show login modal when tab is clicked
+      document.getElementById("customersLoginEmail").value = "";
+      document.getElementById("customersLoginPassword").value = "";
+      document.getElementById("customersLoginError").style.display = "none";
+      document.getElementById("customersLoginModal").style.display = "flex";
+      // Hide customers page if it's visible
+      document.getElementById("customers-page").style.display = "none";
+      // Deactivate tab
+      document.getElementById("tabCustomersBtn").classList.remove("active");
+      return; // Do not show the customers page until login
     }
     // Show the requested main section, hide others
     mainTabs.forEach(({ btn: b, page: p }) => {
@@ -82,34 +84,6 @@ mainTabs.forEach(({ btn, page }) => {
   });
 });
 
-// ----------- LOGIN MODAL LOGIC FOR CUSTOMERS TAB -----------
-
-document.getElementById("tabCustomersBtn").addEventListener("click", function(e) {
-  if (!isCustomersTabLoggedIn) {
-    // Not logged in: show modal, don't switch tab
-    document.getElementById("customersLoginModal").style.display = "flex";
-    document.getElementById("customersLoginEmail").value = "";
-    document.getElementById("customersLoginPassword").value = "";
-    document.getElementById("customersLoginError").style.display = "none";
-    // Hide customers page if it's visible
-    document.getElementById("customers-page").style.display = "none";
-    // Deactivate tab
-    document.getElementById("tabCustomersBtn").classList.remove("active");
-    return;
-  }
-  // Logged in: show customers page and activate tab
-  document.getElementById("customers-page").style.display = "";
-  document.getElementById("tabCustomersBtn").classList.add("active");
-  // Hide other main pages/tabs as needed
-  ["tabQuoteBuilderPage","productLibrarySection","tabScopeOfWorkPage","tabTaskListPage"].forEach(id => {
-    if (id !== "customers-page") document.getElementById(id).style.display = "none";
-  });
-  ["tabQuoteBuilderBtn","tabProductLibraryBtn","tabScopeOfWorkBtn","tabTaskListBtn"].forEach(id => {
-    if (id !== "tabCustomersBtn") document.getElementById(id).classList.remove("active");
-  });
-  // Load customers table
-  if (typeof loadCustomers === "function") loadCustomers();
-});
 
 // ---- PRODUCT LIBRARY TAB LOGIC ----
 document.getElementById("tabProductLibraryBtn").addEventListener("click", () => {
@@ -1035,6 +1009,11 @@ document.getElementById("newQuoteBarBtn").onclick = function() {
   updateQuoteSummary();
   updateGrandTotals();
   showNotification("Ready for a new quote!", "success");
+
+  // Now open the customer modal (add this line):
+  document.getElementById("customerAccountModal").style.display = "block";
+  // If you have a function to reset the modal fields, call it here too:
+  if (typeof resetCustomerModal === "function") resetCustomerModal();
 };
 function showNotification(msg, type="success") {
   let notif = document.getElementById("globalNotification");
@@ -1520,7 +1499,7 @@ window.onload = function() {
   setupMicButton("taskListMicBtn", "taskListAiPromptText", "generateTaskListBtn");
   setupGenerateButtonState("sowAiPromptText", "draftFullSowWithAiBtn");
   setupGenerateButtonState("taskListAiPromptText", "generateTaskListBtn");
-};
+ };
 
 // --- Customer Account Modal Logic (matching new modal HTML & companyNameGroup logic) ---
 
@@ -1528,6 +1507,7 @@ window.onload = function() {
 window.selectedCustomerAccount = null;
 window.newCustomerType = null;
 window.selectedProjectName = "";
+
 
 // Utility: Reset all modal steps/fields
 function resetCustomerModal() {
@@ -1552,11 +1532,28 @@ function resetCustomerModal() {
   window.selectedProjectName = "";
 }
 
-// Show modal
-function openCustomerModal() {
-  resetCustomerModal();
-  document.getElementById("customerAccountModal").style.display = "block";
-}
+// Always show login modal when Customers tab is clicked
+document.getElementById("tabCustomersBtn").onclick = function() {
+  document.getElementById("customersLoginEmail").value = "";
+  document.getElementById("customersLoginPassword").value = "";
+  document.getElementById("customersLoginError").style.display = "none";
+  document.getElementById("customersLoginModal").style.display = "block";
+};
+
+// On login success, show the customer modal
+document.getElementById("customersModalLoginBtn").onclick = async function() {
+  const email = document.getElementById("customersLoginEmail").value.trim();
+  const password = document.getElementById("customersLoginPassword").value;
+  try {
+    await firebase.auth().signInWithEmailAndPassword(email, password);
+    document.getElementById("customersLoginModal").style.display = "none";
+    resetCustomerModal();
+    document.getElementById("customerAccountModal").style.display = "block";
+  } catch (e) {
+    document.getElementById("customersLoginError").textContent = e.message || "Login failed.";
+    document.getElementById("customersLoginError").style.display = "block";
+  }
+};
 
 // Hide modal
 function closeCustomerModal() {
@@ -1564,9 +1561,9 @@ function closeCustomerModal() {
 }
 
 // --- Modal open/close events ---
-document.getElementById("newQuoteBarBtn").onclick = openCustomerModal;
+document.getElementById("newQuoteBarBtn").onclick = function() {
 document.getElementById("closeCustomerModalBtn").onclick = closeCustomerModal;
-
+}
 // --- Step 1: Search existing customers ---
 document.getElementById("customerSearchInput").oninput = async function() {
   const searchVal = this.value.trim().toLowerCase();
@@ -1831,4 +1828,42 @@ document.getElementById("cancelDeleteCustomerBtn").onclick =
 document.getElementById("closeDeleteCustomerModalBtn").onclick = function() {
   document.getElementById("deleteCustomerModal").style.display = "none";
   customerToDeleteId = null;
+ };
+
+// --- Customers Tab: Always force login, then show customers table/info ---
+
+// Customers tab click: always show login modal
+document.getElementById("tabCustomersBtn").onclick = function() {
+  document.getElementById("customersLoginEmail").value = "";
+  document.getElementById("customersLoginPassword").value = "";
+  document.getElementById("customersLoginError").style.display = "none";
+  document.getElementById("customersLoginModal").style.display = "block";
+};
+
+// Cancel button on login modal
+document.getElementById("customersModalCancelBtn").onclick = function() {
+  document.getElementById("customersLoginModal").style.display = "none";
+};
+
+document.getElementById("customersModalLoginBtn").onclick = async function() {
+  const email = document.getElementById("customersLoginEmail").value.trim();
+  const password = document.getElementById("customersLoginPassword").value;
+  try {
+    await firebase.auth().signInWithEmailAndPassword(email, password);
+    document.getElementById("customersLoginModal").style.display = "none";
+    // Show customers page and activate tab
+    document.getElementById("customers-page").style.display = "";
+    document.getElementById("tabCustomersBtn").classList.add("active");
+    // Hide all other main pages/tabs
+    ["tabQuoteBuilderPage","productLibrarySection","tabScopeOfWorkPage","tabTaskListPage"].forEach(id => {
+      if (id !== "customers-page") document.getElementById(id).style.display = "none";
+    });
+    ["tabQuoteBuilderBtn","tabProductLibraryBtn","tabScopeOfWorkBtn","tabTaskListBtn"].forEach(id => {
+      if (id !== "tabCustomersBtn") document.getElementById(id).classList.remove("active");
+    });
+    if (typeof loadCustomers === "function") loadCustomers();
+  } catch (e) {
+    document.getElementById("customersLoginError").textContent = e.message || "Login failed.";
+    document.getElementById("customersLoginError").style.display = "block";
+  }
 };
