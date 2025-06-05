@@ -1,11 +1,6 @@
-/* ---------------------------------------------------
-   Clearpoint AV Quoting Tool - Branded, Consistent, Responsive Stylesheet
-   Font: Montserrat, Colors & Buttons match clearpointtechdesign.com
-------------------------------------------------------*/
-
-/* --- Font & Variables --- */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 
+/* --- Font & Variables --- */
 :root {
     --cp-dark-blue: #003366;
     --cp-mid-blue: #0059b3;
@@ -65,12 +60,54 @@ header h1 {
     cursor: pointer;
     margin-left: 24px;
     transition: background var(--transition);
+    font-family: var(--font);
 }
 #logoutButton:hover { background: #b91d2b; }
 
 @media (max-width:700px) {
     header { flex-direction: column; height: auto; padding: 1em; }
     header h1 { font-size: 1.2rem; margin-bottom: 8px; }
+}
+
+/* --- Main Tab Navigation --- */
+#mainTabNav {
+    width: 100%;
+    background: #f4f8fc;
+    border-bottom: 1.5px solid #e0e8ef;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2.4rem;
+    padding: 0.55rem 0 0.35rem 0;
+    font-size: 1.11rem;
+    font-weight:600;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.main-tab-btn {
+    background: none;
+    border: none;
+    color: #003366;
+    font-weight: 600;
+    font-size: 1.07rem;
+    padding: 7px 22px;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    transition: background 0.16s, color 0.16s;
+    outline: none;
+    margin-bottom: -1.5px;
+    font-family: 'Montserrat', sans-serif !important;
+}
+.main-tab-btn.active, .main-tab-btn:focus {
+    background: #fff;
+    color: #0059b3;
+    border-bottom: 2.5px solid #0059b3;
+    box-shadow: 0 2px 8px #0059b308;
+}
+.main-tab-btn:hover:not(.active) {
+    background: #e6f0ff;
+    color: #0059b3;
 }
 
 /* --- Floating Action Bar (right) --- */
@@ -134,14 +171,59 @@ header h1 {
     padding: 0;
     margin: 0;
 }
+
+/* Sidebar list items: add hover and better spacing */
 #templateList li, #savedQuotesList li {
-    padding: 9px 0;
+    padding: 10px 0 10px 4px;
     border-bottom: 1px solid #e4e9ef;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 1.01rem;
+    position: relative;
+    background: transparent;
+    transition: background 0.18s;
+}
+#templateList li:hover, #savedQuotesList li:hover {
+    background: #f7fafd;
+}
+
+.quote-sidebar-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 1.01rem;
+    gap: 8px;
 }
+
+.sidebar-delete-btn {
+    background: #eaeaea;
+    color: #b52a37;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.1em;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    margin-left: 8px;
+    font-family: var(--font);
+}
+.sidebar-delete-btn:hover {
+    background: #fbeaea;
+    color: #dc3545;
+}
+
+.quote-sidebar-meta {
+    font-size: 0.93em;
+    color: #667;
+    margin-top: 2px;
+    margin-left: 3px;
+    line-height: 1.2;
+}
+
 #templateList li:last-child, #savedQuotesList li:last-child { border-bottom: none; }
 @media (max-width:500px) {
     #loadQuoteSidebar { width: 96vw; padding: 16px 12px; }
@@ -188,6 +270,7 @@ header h1 {
     box-shadow: var(--shadow);
     cursor: pointer;
     transition: background var(--transition);
+    font-family: var(--font);
 }
 .login-container button:hover { background: var(--cp-dark-blue); }
 .error-message { color: var(--cp-red); margin-top: 16px; font-size: 1.01em; text-align: center; }
@@ -483,6 +566,7 @@ h3, h4 {
   border-radius: 4px;
   border: 1px solid #ccd6e6;
   background: #f8fafc;
+  font-family: var(--font);
 }
 
 /* Remove button style */
@@ -495,6 +579,7 @@ h3, h4 {
   cursor: pointer;
   transition: background 0.15s;
   font-weight: 600;
+  font-family: var(--font);
 }
 
 #quoteItemsTable .action-button:hover {
@@ -518,7 +603,6 @@ h3, h4 {
   }
 }
 
-/* Container for horizontal scroll if needed */
 #quoteItemsTableContainer {
   overflow-x: auto;
   background: #f5f8fc;
@@ -706,13 +790,13 @@ h3, h4 {
     padding: 12px 18px;
     margin-bottom: 20px;
 }
-#sowAiPromptSection {
+#sowAiPromptSection, #taskListAiPromptSection {
     background: #f0f5fb;
     padding: 14px 18px;
     border-radius: 8px;
     margin-bottom: 0;
 }
-#sowAiPromptSection label {
+#sowAiPromptSection label, #taskListAiPromptSection label {
     font-weight: 600;
     color: var(--cp-dark-blue);
 }
@@ -730,19 +814,40 @@ h3, h4 {
     border: 1px solid #b8c5d6;
     font-size: 1rem;
 }
+
 .mic-button {
-    background: var(--cp-accent-blue);
-    color: #fff;
+    background: #e6f0ff;
+    color: #0059b3;
     border: none;
     border-radius: 8px;
-    font-size: 1.8rem;
     padding: 0 18px;
+    height: 44px;
+    min-width: 44px;
+    font-size: 1.8rem;
     cursor: pointer;
-    box-shadow: var(--shadow);
-    transition: background var(--transition);
+    box-shadow: 0 2px 12px rgba(0,89,179,0.08);
+    transition: background 0.17s, color 0.17s;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.mic-button:hover { background: #0086a7; }
-#sowAiPromptSection button#draftFullSowWithAiBtn {
+.mic-svg {
+    width: 28px;
+    height: 28px;
+    display: block;
+}
+.mic-button.listening {
+    background: #fe5e6b !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px #fe5e6b33;
+}
+.mic-button:focus {
+    outline: 2px solid #0059b3;
+}
+
+#sowAiPromptSection button#draftFullSowWithAiBtn,
+#taskListAiPromptSection button#generateTaskListBtn {
     margin-top: 10px;
     background: var(--cp-mid-blue);
     color: #fff;
@@ -750,7 +855,9 @@ h3, h4 {
     border-radius: 6px;
     font-weight: 600;
     padding: 10px 22px;
+    font-family: 'Montserrat', sans-serif !important;
 }
+
 .sow-input-group label {
     font-weight: 600;
     color: var(--cp-dark-blue);
@@ -764,6 +871,129 @@ h3, h4 {
     padding: 10px 12px;
     margin-top: 6px;
     font-size: 1.05rem;
+}
+
+/* --- Task List Table --- */
+.task-list-table-container {
+    margin-top: 20px;
+}
+.task-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px #0059b308;
+}
+.task-list-table th, .task-list-table td {
+    border: 1px solid #e4e9ef;
+    padding: 8px 10px;
+    font-size: 1.01em;
+    text-align: left;
+}
+.task-list-table th {
+    background: #e6f0ff;
+    color: #003366;
+    font-weight: 700;
+}
+.task-list-table td input, .task-list-table td select {
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #b8c5d6;
+    padding: 6px 8px;
+    font-size: 1.01em;
+    background: #f7fafd;
+    font-family: 'Montserrat', sans-serif !important;
+}
+.task-list-table tr td:last-child {
+    text-align: center;
+}
+.task-list-table .remove-task-btn {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.14s;
+    font-family: 'Montserrat', sans-serif !important;
+}
+.task-list-table .remove-task-btn:hover {
+    background: #b52a37;
+}
+#addTaskRowBtn {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 8px 18px;
+    margin-top: 10px;
+    transition: background 0.14s;
+    font-family: 'Montserrat', sans-serif !important;
+}
+#addTaskRowBtn:hover {
+    background: #218838;
+}
+
+/* --- Download Buttons --- */
+#downloadSowPdfBtn, #downloadTaskListPdfBtn {
+    background: #f39c12;
+    color: #fff;
+    border-radius: 6px;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 600;
+    margin-top: 18px;
+    font-size: 1.04rem;
+    transition: background 0.14s;
+    font-family: 'Montserrat', sans-serif !important;
+}
+#downloadSowPdfBtn:hover, #downloadTaskListPdfBtn:hover {
+    background: #ca870c;
+}
+
+/* --- TinyMCE Editor override --- */
+.tox-tinymce {
+    border-radius: 8px !important;
+    border: 1.5px solid #b8c5d6 !important;
+    font-family: 'Montserrat', sans-serif;
+}
+.tox .tox-menubar, .tox .tox-toolbar, .tox .tox-toolbar__primary {
+    background: #f7fafd !important;
+    border: none !important;
+}
+.tox .tox-edit-area__iframe {
+    background: #fff;
+    font-family: 'Montserrat', Arial, sans-serif;
+}
+.tox .tox-statusbar {
+    border-radius: 0 0 8px 8px;
+}
+
+/* --- AI Overlay --- */
+#aiOverlay {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0; top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(30,33,40,0.43);
+    align-items: center;
+    justify-content: center;
+}
+#aiOverlayMsg {
+    background: #fff;
+    color: #222;
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 44px 65px;
+    border-radius: 14px;
+    box-shadow: 0 2px 18px #0003;
+    text-align: center;
 }
 
 /* --- Action Buttons --- */
@@ -782,6 +1012,7 @@ h3, h4 {
     margin-left: 8px;
     transition: background var(--transition), filter var(--transition);
     cursor: pointer;
+    font-family: 'Montserrat', sans-serif !important;
 }
 .persistent-actions button:hover { filter: brightness(1.09); }
 .persistent-actions button#viewSpecSheetsBtn { background: var(--cp-accent-blue); }
@@ -843,7 +1074,14 @@ footer {
 ::-webkit-scrollbar-thumb { background: #d0e1ee; border-radius: 8px; }
 ::-webkit-scrollbar { width: 9px; background: #f7fafd; }
 
+@media (max-width: 1000px) {
+    #mainTabNav { gap: 0.8rem; }
+    .main-tab-btn { font-size: 0.98em; padding: 7px 10px; }
+}
 @media (max-width: 700px) {
+    #mainTabNav { font-size: 0.99rem; }
+    .main-tab-page main { padding: 12px 2vw; }
+    .task-list-table th, .task-list-table td { font-size: 0.92em; }
     .totals-grid { flex-direction: column; gap: 12px; }
     .labor-card-summary { flex-direction: column; gap: 10px; }
     #quoteItemsTable { min-width: 600px; font-size: 0.98rem; }
@@ -851,7 +1089,6 @@ footer {
     main { min-width: 90vw; }
 }
 
-/* --- Print Styles --- */
 @media print {
     body, main, section, table, h1, h2, h3, h4, h5, h6 { color: #000 !important; background: #fff !important; }
     header, #floatingActionBar, #loadQuoteSidebar, .persistent-actions, .modal, .mic-button, #quote-actions-final, #view-navigation { display: none !important; }
@@ -861,4 +1098,222 @@ footer {
     #quoteItemsTable th, #quoteItemsTable td, .summary-table td, #laborSummaryTable td, #quoteSummaryTable td { border: 1px solid #ccc !important; padding: 5px 8px; }
     #quoteItemsTable input, #quoteItemsTable select, .summary-table input, #laborSummaryTable input { border: none; background: transparent; color: #000; }
     .action-button { display: none !important; }
+}
+
+button:disabled {
+  background: #b0b9c7 !important;
+  color: #eaeaea !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+/* Add this to your style.css */
+
+#addProductModal {
+  display: none;
+  position: fixed;
+  z-index: 1100;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.35);
+  align-items: center;
+  justify-content: center;
+  font-family: 'Montserrat', sans-serif;
+}
+
+#addProductModal .add-product-modal-content {
+  background: #fff;
+  padding: 40px 38px 32px 38px;
+  border-radius: 16px;
+  box-shadow: 0 6px 32px #6c63ff22;
+  width: 98%;
+  max-width: 900px;
+  position: relative;
+}
+
+#addProductModal h2 {
+  color: #0059b3;
+  font-size: 2.1rem;
+  margin-bottom: 22px;
+  font-weight: 700;
+}
+
+#addProductModal .close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 2.3rem;
+  color: #6c63ff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#addProductForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#addProductForm .form-row {
+  display: flex;
+  gap: 28px;
+}
+
+#addProductForm .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#addProductForm label {
+  font-size: 1.04rem;
+  font-weight: 600;
+  margin-bottom: 7px;
+  color: #003366;
+}
+
+#addProductForm input,
+#addProductForm textarea {
+  font-size: 1.12rem;
+  padding: 13px 12px;
+  border: 1.5px solid #b5c7db;
+  border-radius: 7px;
+  font-family: 'Montserrat', sans-serif;
+  margin-bottom: 0;
+  background: #f4f8fc;
+  transition: border 0.2s;
+}
+
+#addProductForm input:focus,
+#addProductForm textarea:focus {
+  border: 1.5px solid #0059b3;
+  outline: none;
+  background: #e6f0ff;
+}
+
+#addProductForm textarea {
+  resize: vertical;
+  min-height: 60px;
+  max-height: 180px;
+}
+
+#addProductForm button[type="submit"] {
+  background: #0059b3;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 13px 36px;
+  font-size: 1.18rem;
+  margin-top: 8px;
+  width: 100%;
+  box-shadow: 0 2px 8px #0059b333;
+  transition: background 0.18s;
+}
+
+#addProductForm button[type="submit"]:hover {
+  background: #003366;
+}
+
+#addProductStatus {
+  font-size: 1.08rem;
+  margin-top: 14px;
+  display: none;
+  text-align: center;
+}
+
+/* Make the description row fill the modal width */
+.description-row {
+  width: 100%;
+  margin-top: 0.5rem;
+  display: block;
+}
+#addProductForm .description-row .form-group {
+  width: 100%;
+}
+#addProductForm .description-row textarea {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  resize: none; /* No vertical stretching */
+}
+
+/* Modern Edit Button */
+.editProductBtn {
+  font-family: 'Montserrat', sans-serif;
+  background: #e3f1fd;
+  color: #2574a9;
+  border: none;
+  border-radius: 5px;
+  padding: 7px 18px;
+  font-weight: 600;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.editProductBtn:hover {
+  background: #d0e8fc;
+  color: #176095;
+}
+
+/* Modern Delete Button (just X) */
+.deleteProductBtn {
+  background: #fde3e3;
+  color: #d7263d;
+  border: none;
+  border-radius: 5px;
+  padding: 7px 15px;
+  font-size: 1.15rem;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.deleteProductBtn:hover {
+  background: #fccfcf;
+  color: #a51c1c;
+}
+.delete-x-icon {
+  font-size: 1.25em;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Center table headers and cells for the Product Library */
+#productLibraryTable th,
+#productLibraryTable td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Also center the content of buttons inside the table */
+#productLibraryTable button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* Hide these elements by default - they'll only be shown after login */
+#logoutButton,
+#floatingActionBar,
+#mainTabNav {
+  display: none !important;
+}
+
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.action-button,
+.sidebar-load-btn,
+.sidebar-delete-btn {
+  cursor: pointer;
 }
