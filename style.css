@@ -1317,3 +1317,495 @@ input[type="submit"],
 .sidebar-delete-btn {
   cursor: pointer;
 }
+
+/* Customer Modal matches Add Product Modal */
+.customer-modal-content {
+  max-width: 600px;
+  width: 98vw;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 36px rgba(0,89,179,0.08);
+  padding: 40px 36px 32px 36px;
+  font-family: 'Montserrat', sans-serif;
+  position: relative;
+}
+.customer-modal-content .modal-title {
+  color: #0059b3;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  letter-spacing: 0.5px;
+}
+.customer-modal-content .modal-divider {
+  border: none;
+  border-bottom: 2px solid #e6f0ff;
+  margin-bottom: 22px;
+}
+.customer-modal-content .modal-label {
+  font-weight: 600;
+  color: #003366;
+  margin-bottom: 6px;
+  display: block;
+}
+.customer-modal-content .modal-input {
+  width: 100%;
+  margin-bottom: 0.7em;
+  border-radius: 8px;
+  border: 1.5px solid #e4e9ef;
+  background: #f7fafd;
+  padding: 11px 14px;
+  font-size: 1.07rem;
+  font-family: 'Montserrat', sans-serif;
+  transition: border 0.18s;
+}
+.customer-modal-content .modal-input:focus {
+  border: 1.5px solid #0059b3;
+  background: #fff;
+}
+.customer-modal-content .modal-btn-blue {
+  background: #0059b3;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-weight: 600;
+  padding: 12px 0;
+  font-size: 1rem;
+  margin-right: 0.5em;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.customer-modal-content .modal-btn-blue:hover {
+  background: #003366;
+}
+.customer-modal-content .modal-btn-accent {
+  background: #00b1e1;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-weight: 600;
+  padding: 12px 0;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.customer-modal-content .modal-btn-accent:hover {
+  background: #0086a7;
+}
+.customer-modal-content .modal-btn-green {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-weight: 600;
+  padding: 12px 0;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.customer-modal-content .modal-btn-green:hover {
+  background: #1e7e34;
+}
+.customer-modal-content .modal-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.customer-modal-content .modal-row > div {
+  flex: 1;
+}
+.customer-modal-content .modal-list {
+  max-height: 110px;
+  overflow-y: auto;
+  border: 1px solid #e4e9ef;
+  border-radius: 6px;
+  background: #f7fafd;
+  margin: 4px 0 10px 0;
+  padding: 0;
+  list-style: none;
+}
+.customer-modal-content .modal-list li {
+  padding: 9px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #e4e9ef;
+  transition: background 0.15s;
+  font-size: 1.01rem;
+}
+.customer-modal-content .modal-list li:last-child {
+  border-bottom: none;
+}
+.customer-modal-content .modal-list li:hover,
+.customer-modal-content .modal-list li.selected {
+  background: #e6f0ff;
+  font-weight: 600;
+}
+.customer-modal-content .modal-close-button {
+  color: #0059b3;
+  font-size: 2rem;
+  font-weight: 700;
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: color 0.18s;
+}
+.customer-modal-content .modal-close-button:hover {
+  color: #dc3545;
+}
+@media (max-width: 700px) {
+  .customer-modal-content {
+    padding: 22px 7vw 20px 7vw;
+    max-width: 98vw;
+  }
+  .customer-modal-content .modal-title {
+    font-size: 1.2rem;
+  }
+  .customer-modal-content .modal-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+/* Make customer input fields bigger, wider, and with more spacing */
+.customer-modal-content {
+  max-width: 636px;
+  min-width: 350px;
+}
+
+/* More vertical space between modal rows and input boxes */
+.customer-modal-content .modal-row {
+  gap: 30px;
+  margin-bottom: 26px; /* increased spacing between each row */
+}
+
+.customer-modal-content .modal-input {
+  margin-bottom: 0 !important; /* remove margin so spacing is ONLY from .modal-row */
+  background: #f7fafd;
+  border-radius: 8px;
+}
+
+.customer-modal-content .modal-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px; /* small gap between label and input */
+}
+
+/* Extra space between First Name and Last Name fields */
+#addCustomerForm .modal-row:first-child {
+  gap: 48px !important;  /* adjust px value to your liking */
+}
+
+/* Customer Table Styles */
+#customersTable.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 18px;
+}
+
+#customersTable.styled-table th,
+#customersTable.styled-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+/* Modal Styles (reuse your existing modal CSS if present) */
+#deleteCustomerModal .modal-content {
+  padding: 30px 24px;
+}
+#deleteCustomerModal .modal-close-button {
+  position: absolute;
+  right: 18px;
+  top: 12px;
+  cursor: pointer;
+  font-size: 1.3em;
+}
+
+@media (max-width: 700px) {
+  .customer-modal-content {
+    padding: 16px 2vw 12px 2vw;
+    max-width: 99vw;
+  }
+  .customer-modal-content .modal-row {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+}
+.light-blue-btn {
+  background: #e3f0fc;
+  border: none;
+  color: #1275ca;
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin-right: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.light-blue-btn:hover {
+  background: #c6e2fa;
+}
+
+.light-red-btn {
+  background: #fde8eb;
+  border: none;
+  color: #e64c3c;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.light-red-btn:hover {
+  background: #f8b4bc;
+}
+
+.modal {
+  position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.18); z-index: 2000; display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: #fff; border-radius: 8px; box-shadow: 0 2px 16px rgba(0,0,0,0.15); padding: 28px 24px; position: relative;
+}
+.modal-btn-blue { background: #e3f0fc; color: #1275ca; border: none; border-radius: 4px; padding: 7px 16px; font-weight:600; }
+.modal-btn-blue:hover { background: #c6e2fa; }
+.modal-btn-gray { background: #f0f0f0; color: #555; border: none; border-radius: 4px; padding: 7px 16px; }
+
+
+/* Modal overlay (background) */
+#customersLoginModal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.4); /* Dimmed background */
+  justify-content: center;
+  align-items: center;
+}
+
+/* Modal content box */
+#customersLoginModal .modal-content {
+  background: #fff;
+  margin: auto;
+  padding: 2rem 2.5rem 1.5rem 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.26);
+  width: 360px;
+  max-width: 90vw;
+  animation: modalFadeIn 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Modal fade-in animation */
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(-40px);}
+  to   { opacity: 1; transform: translateY(0);}
+}
+
+/* Modal title */
+#customersLoginModal .modal-content h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  text-align: center;
+  color: #2b2b2b;
+}
+
+/* Input fields */
+#customersLoginModal .modal-content input[type="email"],
+#customersLoginModal .modal-content input[type="password"] {
+  font-size: 1rem;
+  padding: 0.7rem 0.9rem;
+  margin: 0.5rem 0;
+  border: 1px solid #bdbdbd;
+  border-radius: 5px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+#customersLoginModal .modal-content input[type="email"]:focus,
+#customersLoginModal .modal-content input[type="password"]:focus {
+  border-color: #1976d2;
+}
+
+/* Error message */
+#customersLoginError {
+  color: #d32f2f;
+  background: #ffeaea;
+  padding: 0.5rem 0.7rem;
+  border-radius: 4px;
+  margin: 0.4rem 0 0.7rem 0;
+  font-size: 0.97rem;
+  display: none;
+  text-align: center;
+}
+
+/* Modal actions (buttons) */
+#customersLoginModal .modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-top: 1.1rem;
+}
+
+/* Login button */
+#customersModalLoginBtn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 0.7rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+#customersModalLoginBtn:hover {
+  background: #145ea8;
+}
+
+/* Cancel button */
+#customersModalCancelBtn {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #bdbdbd;
+  border-radius: 5px;
+  padding: 0.7rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, border 0.18s;
+}
+#customersModalCancelBtn:hover {
+  background: #ededed;
+  border-color: #888;
+}
+
+/* Modal window style */
+#editCustomerModal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.18);
+  padding: 32px 28px 24px 28px;
+  max-width: 540px;
+  margin: 32px auto;
+  position: relative;
+}
+
+#editCustomerModal h2 {
+  color: #1976d2;
+  font-size: 2rem;
+  margin-bottom: 18px;
+  font-weight: 700;
+}
+
+#editCustomerModal form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 1.05em;
+  color: #244366;
+  letter-spacing: 0.01em;
+}
+
+#editCustomerModal form .input-row {
+  display: flex;
+  gap: 18px;
+}
+
+#editCustomerModal form .input-row > div {
+  flex: 1;
+}
+
+#editCustomerModal input[type="text"],
+#editCustomerModal input[type="email"] {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid #baccd9;
+  border-radius: 6px;
+  background: #f9fafd;
+  margin-bottom: 18px;
+  font-size: 1em;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+
+#editCustomerModal input[type="text"]:focus,
+#editCustomerModal input[type="email"]:focus {
+  border-color: #1976d2;
+  outline: none;
+  background: #fff;
+}
+
+#editCustomerModal .modal-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+#editCustomerModal button[type="submit"] {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  padding: 10px 26px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+#editCustomerModal button[type="submit"]:hover {
+  background: #145ea8;
+}
+
+#editCustomerModal .cancel-btn {
+  background: #f4f6f8;
+  color: #444;
+  border: 1px solid #cdd9e5;
+  padding: 10px 26px;
+  border-radius: 5px;
+  font-weight: 500;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+#editCustomerModal .cancel-btn:hover {
+  background: #e4e7ea;
+}
+
+/* Modal overlay - covers the viewport, centers the modal */
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(36, 54, 66, 0.08); /* subtle overlay */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  /* No padding, no extra height here! */
+}
+
+/* Modal content box */
+#editCustomerModal > form,
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.18);
+  padding: 32px 28px 24px 28px;
+  max-width: 540px;
+  width: 100%;
+  /* Remove any height: 100% or height: 100vh here! */
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 0;
+}
