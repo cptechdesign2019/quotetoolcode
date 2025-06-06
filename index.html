@@ -310,6 +310,15 @@
 
 <div id="productLibrarySection" style="display:none; padding: 30px;">
   <h2>Product Library</h2>
+<!-- Import CSV Button for Product Library -->
+<div style="margin: 18px 0;">
+  <button id="importProductsCsvBtn"
+    style="padding:10px 22px; background:#0059b3; color:#fff; border:none; border-radius:6px; font-weight:600; cursor:pointer;">
+    Import Products CSV
+  </button>
+  <input type="file" id="importProductsCsvInput" accept=".csv" style="display:none;" />
+  <span id="importProgress" style="margin-left:14px; font-weight:bold; color:#0059b3;"></span>
+</div>
   <label for="brandFilter">Filter by Brand:</label>
   <select id="brandFilter">
     <option value="">Select a brand</option>
