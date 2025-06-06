@@ -1489,6 +1489,88 @@ document.getElementById("addProductForm").onsubmit = async function(e) {
   }
 };
 
+// --- Import Products CSV Button Logic ---
+document.getElementById("importProductsCsvBtn").onclick = function () {
+  document.getElementById("importProductsCsvInput").click();
+};
+// The actual import logic will be added in the next step!
+
+function parsePrice(val) {
+  if (!val) return 0;
+  return parseFloat(String(val).replace(/[$,]/g, '')) || 0;
+}
+
+document.getElementById("importProductsCsvInput").addEventListener("change", function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const progressEl = document.getElementById("importProgress");
+  progressEl.textContent = "Starting import...";
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: async function (results) {
+      const productsData = results.data;
+      let added = 0, updated = 0, failed = 0;
+      let done = 0;
+      const total = productsData.length;
+
+      for (const row of productsData) {
+        const productId = row["Product ID"]?.trim();
+        if (!productId) { failed++; done++; progressEl.textContent = `Imported ${done}/${total}`; continue; }
+
+        // Mapped and price-parsed fields
+        const data = {
+          productId: row["Product ID"]?.trim() || "",
+          brand: row["Brand"]?.trim() || "",
+          productName: row["Product Name"]?.trim() || "",
+          productNumber: row["Product Number"]?.trim() || "",
+          description: row["Description"]?.trim() || "",
+          costPrice: parsePrice(row["Dealer"]),
+          msrp: parsePrice(row["MSRP"]),
+          map: parsePrice(row["MAP"]),
+          primaryDistributor: row["Primary Distributor"]?.trim() || "",
+          secondaryDistributor: row["Secondary Distributor"]?.trim() || "",
+          tertiaryDistributor: row["Tertiary Distributor"]?.trim() || "",
+          specSheetUrl: row["Spec Sheet URL"]?.trim() || "",
+          imageUrl: row["Image URL"]?.trim() || ""
+        };
+
+        try {
+          const snap = await db.collection("products")
+            .where("productId", "==", productId)
+            .get();
+
+          if (!snap.empty) {
+            await db.collection("products").doc(snap.docs[0].id).set(data, { merge: true });
+            updated++;
+          } else {
+            await db.collection("products").add(data);
+            added++;
+          }
+        } catch (err) {
+          console.error("Failed to import product:", data, err);
+          failed++;
+        }
+        done++;
+        progressEl.textContent = `Imported ${done}/${total}`;
+      }
+
+      progressEl.textContent = `Done! Added: ${added}, Updated: ${updated}, Failed: ${failed}`;
+      setTimeout(() => { progressEl.textContent = ""; }, 4000);
+
+      if (typeof loadProducts === "function") loadProducts();
+    },
+    error: function (err) {
+      alert("Error parsing CSV: " + err.message);
+      progressEl.textContent = "";
+    }
+  });
+
+  e.target.value = "";
+});
+
 // ------------- INIT ON LOAD -------------
 window.onload = function() {
   updateFooterYear();
