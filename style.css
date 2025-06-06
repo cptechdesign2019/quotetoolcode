@@ -545,13 +545,11 @@ h3, h4 {
 #quoteItemsTable th.col-markup,
 #quoteItemsTable th.col-msrp,
 #quoteItemsTable th.col-sell-price,
-#quoteItemsTable th.col-qty,
 #quoteItemsTable th.col-line-total,
 #quoteItemsTable td.col-cost-price,
 #quoteItemsTable td.col-markup,
 #quoteItemsTable td.col-msrp,
 #quoteItemsTable td.col-sell-price,
-#quoteItemsTable td.col-qty,
 #quoteItemsTable td.col-line-total {
   text-align: right;
 }
@@ -671,16 +669,17 @@ h3, h4 {
 }
 
 .labor-card-summary {
-  grid-column: 1 / span 2; /* summary spans both columns */
   background: #e9f2fd;
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 10px 18px;
   margin-top: 8px;
   font-size: 1em;
-  min-width: 180px;
-  width: 100%;
-  box-sizing: border-box;
+  display: inline-block;
+  min-width: 0;
+  width: auto;
+  max-width: 340px;
   color: #14406c;
+  box-sizing: border-box;
 }
 .labor-col label {
   font-weight: 500;
@@ -1685,4 +1684,423 @@ input[type="submit"],
 #customersModalCancelBtn:hover {
   background: #ededed;
   border-color: #888;
+}
+
+/* --- PROJECT INFO INPUT SHRINK --- */
+.project-input-short {
+    max-width: 220px;
+    width: 100%;
+    min-width: 100px;
+    /* Allow flex shrink */
+    flex: 0 1 220px;
+}
+
+/* --- QUOTE BUILDER TABLE: CENTER HEADERS & CELLS --- */
+#quoteItemsTable th,
+#quoteItemsTable td {
+    text-align: center !important;
+    vertical-align: middle;
+}
+
+/* --- QUOTE BUILDER TABLE: TEXT BOX SIZE AND SYMBOLS --- */
+/* Make inputs fill the cell */
+.col-markup .input-symbol-wrapper,
+.col-sell-price .input-symbol-wrapper {
+  display: block;
+  width: 100%;
+  position: relative;
+}
+
+/* Make input take full width, with padding for symbol */
+.col-markup .input-symbol-wrapper input.table-input-small {
+  width: 100% !important;
+  padding-right: 2.2em !important; /* room for % */
+  text-align: right;
+  box-sizing: border-box;
+}
+
+.col-sell-price .input-symbol-wrapper input.table-input-small {
+  width: 100% !important;
+  padding-left: 1.8em !important; /* room for $ */
+  text-align: right;
+  box-sizing: border-box;
+}
+
+/* Symbol inside input, visually */
+.col-markup .input-symbol-right {
+  position: absolute;
+  top: 50%;
+  right: 0.8em;
+  transform: translateY(-50%);
+  color: #003366;
+  font-weight: 600;
+  pointer-events: none;
+  font-size: 1em;
+  font-family: var(--font);
+  z-index: 2;
+}
+
+.col-sell-price .input-symbol {
+  position: absolute;
+  top: 50%;
+  left: 0.6em;
+  transform: translateY(-50%);
+  color: #003366;
+  font-weight: 600;
+  pointer-events: none;
+  font-size: 1em;
+  font-family: var(--font);
+  z-index: 2;
+}
+
+/* Remove global .input-symbol-right if present */
+.input-symbol-right:not(.col-markup .input-symbol-right) {
+  display: none !important;
+}
+
+/* General input style */
+.table-input-small {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  font-size: 0.97em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccd6e6;
+  background: #f8fafc;
+  font-family: var(--font);
+  display: block;
+}
+
+.table-input-qty {
+  width: 38px !important;
+  min-width: 0 !important;
+  max-width: 50px !important;
+  box-sizing: border-box;
+  display: inline-block;
+  text-align: center;
+  font-size: 0.97em;
+  padding: 4px 4px;
+  border-radius: 4px;
+  border: 1px solid #ccd6e6;
+  background: #f8fafc;
+  font-family: var(--font);
+}
+
+.col-markup,
+.col-sell-price,
+.col-qty {
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
+#quoteItemsTable {
+  table-layout: auto;
+}
+
+/* Constrain width of specific table columns */
+#quoteItemsTable .col-markup,
+#quoteItemsTable .col-sell-price {
+  width: 115px; /* Adjust this pixel value if needed */
+}
+
+#quoteItemsTable .col-qty {
+  width: 75px;  /* Adjust this pixel value if needed */
+}
+
+/* --- LABOR SMALL INPUTS (Days, Protect, Client Rate, etc.) --- */
+.labor-input-small {
+    width: 75px !important;
+    min-width: 55px;
+    max-width: 95px;
+    text-align: center;
+    padding: 5px 7px;
+    font-size: 1em;
+    border-radius: 5px;
+    margin-bottom: 0.25em;
+}
+
+/* Don't shrink dropdowns (select) for technicians */
+.labor-select-full {
+    min-width: 120px;
+    width: 100%;
+    max-width: 240px;
+    padding: 9px 11px;
+}
+
+/* --- FLEX LAYOUTS FOR SUMMARY SECTIONS --- */
+.quote-summary-flex-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+}
+.equipment-summary-right {
+    margin-left: auto;
+    min-width: 300px;
+    max-width: 370px;
+}
+
+/* --- LABOR SUMMARY FLEX RIGHT --- */
+.labor-summary-flex-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+}
+.labor-summary-right {
+    margin-left: auto;
+    min-width: 300px;
+    max-width: 370px;
+}
+
+/* --- PREWIRE/INSTALL SECTION CUSTOM GRID --- */
+.prewire-install-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px 26px;
+    align-items: start;
+    margin-bottom: 10px;
+}
+.prewire-internal-tech {
+    grid-column: 1 / 2;
+}
+.prewire-days-protect {
+    grid-column: 2 / 3;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.prewire-client-rate {
+    grid-column: 2 / 3;
+    margin-top: 8px;
+}
+.prewire-subcontractor {
+    grid-column: 1 / 2;
+    margin-top: 8px;
+}
+
+/* Responsive adjustments for summary sections */
+@media (max-width: 1200px) {
+    .quote-summary-flex-row,
+    .labor-summary-flex-row {
+        flex-direction: column;
+        gap: 18px;
+    }
+    .equipment-summary-right,
+    .labor-summary-right {
+        margin-left: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+/* ===================================================================== */
+/* NEW GLOBAL OVERRIDE: Center ALL Text in the Current Quote Table */
+/* ===================================================================== */
+
+/*
+ * Rule 1:
+ * This forces every single header (th) and cell (td) in the quote table
+ * to have centered text, overriding all previous text-align rules.
+*/
+#quoteItemsTable th,
+#quoteItemsTable td {
+  text-align: center !important;
+}
+
+/*
+ * Rule 2:
+ * This forces the text INSIDE every input box in the table to also be
+ * centered, in case there are specific rules for number inputs.
+*/
+#quoteItemsTable input {
+  text-align: center !important;
+}
+
+/*
+ * Rule 3:
+ * This adjusts the padding for the Sell Price and Markup inputs to
+ * prevent the centered text from overlapping with the '$' and '%' symbols.
+*/
+#quoteItemsTable .col-sell-price input {
+    padding-left: 1.5em !important;
+    padding-right: 1.5em !important;
+}
+
+#quoteItemsTable .col-markup input {
+    padding-left: 1.5em !important;
+    padding-right: 1.5em !important;
+}
+
+/* ===================================================================== */
+/* FINAL UNIFIED LAYOUT FOR ALL LABOR SECTIONS                         */
+/* ===================================================================== */
+
+/*
+ * Step 1: Define a new, powerful grid container for ALL labor cards.
+ * This grid has 3 main columns for inputs and 1 for the summary box.
+*/
+.labor-card-flexrows,
+.prewire-install-grid {
+    display: grid;
+    /* 3 auto-sized columns for inputs, 1 flexible column for summary */
+    grid-template-columns: auto auto auto 1fr;
+    gap: 16px 12px; /* Minimal gap: 16px vertically, 12px horizontally */
+    padding: 20px 24px;
+    align-items: start;
+}
+
+
+/* --- Placement for SDE & Programming Sections --- */
+
+/* Position "Internal Technicians" in the top-left. */
+.labor-card-flexrows .labor-col:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+}
+/* Position "Days per Tech" to its right. */
+.labor-card-flexrows .labor-col:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+}
+/* Position "Client Rate" to the right of "Days per Tech". */
+.labor-card-flexrows .labor-col:nth-child(3) {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+
+/* --- Placement for Pre-wire & Installation Sections --- */
+
+/* Position "Internal Technicians" in the top-left. */
+.prewire-internal-tech {
+    grid-column: 1;
+    grid-row: 1;
+}
+/* Position the group containing "Days per Tech" and "Client Rate" to its right. */
+.prewire-days-protect {
+    grid-column: 2 / span 2; /* Span across columns 2 and 3 */
+    grid-row: 1;
+    display: flex;
+    gap: 12px; /* Minimal gap between Days and Rate boxes */
+}
+/* Position "Subcontractors" directly below "Internal Technicians". */
+.prewire-subcontractor {
+    grid-column: 1;
+    grid-row: 2;
+}
+/* Position "Days (Subs)" to the right of "Subcontractors". */
+.prewire-subcontractor + .labor-card-summary {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+
+/* --- Common Rules for ALL Sections --- */
+
+/*
+ * Step 2: Keep the small summary box positioned to the far right.
+ * It will align with the top row of inputs.
+*/
+.labor-card-summary {
+    grid-column: 4; /* Place in the last column */
+    grid-row: 1;    /* Align with the first row */
+    justify-self: end; /* Push to the far right of the column */
+    margin-top: 0;
+    max-width: 340px;
+}
+
+/*
+ * Step 3: Ensure the dropdowns for techs and subs remain directly
+ * underneath their respective input boxes, as requested.
+*/
+.labor-col,
+.prewire-internal-tech,
+.prewire-subcontractor {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    gap: 8px;
+}
+
+/* ===================================================================== */
+/* FINAL STATIONARY LAYOUT FOR ALL LABOR SECTIONS                      */
+/* ===================================================================== */
+
+/*
+ * Step 1: Create a precise 4-column grid inside each labor card.
+ * This is the foundation that keeps everything stationary.
+*/
+.labor-card > div:not(.labor-card-header) {
+  display: grid;
+  grid-template-columns: auto auto auto 1fr; /* 3 compact columns, 1 flexible */
+  align-items: start; /* Align all items to the top of their grid area */
+  gap: 16px 12px;
+  padding: 20px 24px;
+}
+
+/*
+ * Step 2: Define positions for the top row of inputs in ALL sections.
+ * These are the stationary elements.
+*/
+.labor-col.internal-tech-col { grid-area: 1 / 1; } /* Row 1, Col 1 */
+.labor-col.days-tech-col   { grid-area: 1 / 2; } /* Row 1, Col 2 */
+.labor-col.rate-col        { grid-area: 1 / 3; } /* Row 1, Col 3 */
+
+/*
+ * Step 3: Position the subcontractor group ONLY in the sections where it exists.
+ * It will sit on the second row, aligned perfectly under the top inputs.
+*/
+.subcontractor-group {
+    grid-area: 2 / 1 / auto / 3; /* Start Row 2, Col 1 and span to Col 3 */
+    display: contents; /* Allows children to be placed on the main grid */
+}
+.labor-col.subs-col      { grid-area: 2 / 1; } /* Row 2, Col 1 */
+.labor-col.days-sub-col  { grid-area: 2 / 2; } /* Row 2, Col 2 */
+
+/*
+ * Step 4: Lock the labor summary box into the top-right corner.
+*/
+.labor-card-summary {
+  grid-area: 1 / 4;   /* Keeps it in the fourth column */
+  justify-self: end;  /* Aligns it to the right (horizontally) */
+  align-self: end;    /* Aligns it to the bottom (vertically) */
+}
+
+/*
+ * Step 5: General styling for all input groups to ensure labels
+ * are on top of inputs.
+*/
+.labor-col {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* ===================================================================== */
+/* FINAL STYLE FOR THE PER-SECTION LABOR SUMMARY TABLES                */
+/* ===================================================================== */
+
+.summary-table-small {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.summary-table-small td {
+    padding: 3px 5px; /* Vertical and horizontal spacing */
+    font-size: 0.95em;
+    white-space: nowrap; /* Prevent text from wrapping */
+}
+
+/* Style for the labels (left column) */
+.summary-table-small td:first-child {
+    font-weight: 600;
+    color: #113366;
+    text-align: left;
+}
+
+/* Style for the values (right column) */
+.summary-table-small td:last-child {
+    font-weight: 700;
+    color: var(--cp-dark-blue);
+    text-align: right;
 }
