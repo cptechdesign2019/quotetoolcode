@@ -91,7 +91,7 @@
                     <h2 style="margin-top:0;">Project Information</h2>
                     <div class="form-group" style="display:flex; gap:18px; align-items:center;">
                         <label for="projectNameNumber" style="min-width:160px;">Project Name & Number:</label>
-                        <input type="text" id="projectNameNumber" name="projectNameNumber" placeholder="e.g., Conference Room Upgrade - PJ1001" class="full-width" style="flex:1;">
+                        <input type="text" id="projectNameNumber" name="projectNameNumber" placeholder="e.g., Conference Room Upgrade - PJ1001" class="project-input-short" style="flex:1;">
                     </div>
                     <div class="form-group" style="display:flex; gap:18px; align-items:center;">
                         <label for="quoteStatusSelector" style="min-width:160px;">Quote Status:</label>
@@ -150,56 +150,60 @@
                 </section>
 
                 <!-- Current Quote Table -->
-                <section id="quote-display" style="margin-bottom:34px;">
-                    <h2>Current Quote</h2>
-                    <div id="quoteItemsTableContainer" style="overflow-x:auto; background:#f5f8fc; border-radius:10px; margin-bottom:20px; padding:8px;">
-                        <table id="quoteItemsTable" style="width:100%; min-width:900px;">
-                            <thead>
-                                <tr>
-                                    <th class="col-drag"></th>
-                                    <th class="col-image">Image</th>
-                                    <th class="col-product-name">Product Name</th>
-                                    <th class="col-product-number">P/N</th>
-                                    <th class="col-description" title="Description">Desc</th>
-                                    <th class="col-cost-price">Cost</th>
-                                    <th class="col-markup">Markup %</th>
-                                    <th class="col-msrp">MSRP</th>
-                                    <th class="col-sell-price">Sell Price</th>
-                                    <th class="col-qty">Qty</th>
-                                    <th class="col-line-total">Line Total</th>
-                                    <th class="col-actions">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="quoteItemsTbody"></tbody>
-                        </table>
-                    </div>
-                    <p id="emptyQuoteMsg" style="color:#b0b0b0; text-align:center; margin:0;">Your equipment quote is currently empty.</p>
-                    <div id="quote-summary" style="margin:30px auto 0 auto; max-width:520px; background:#e6f0ff; border-radius:10px; padding:18px 22px;">
-                        <h3 style="margin-top:0; color:#003366; font-size:1.1rem;">Equipment Quote Summary</h3>
-                        <table id="quoteSummaryTable" style="width:100%;">
-                            <tr><td>Total Equipment Client Price:</td><td id="summarySellTotal">$0.00</td></tr>
-                            <tr><td>Total Equipment Company Cost:</td><td id="summaryCostTotal">$0.00</td></tr>
-                            <tr><td>Equipment Profit (Difference):</td><td id="summaryProfitAmount">$0.00</td></tr>
-                            <tr><td>Equipment Gross Profit Margin %:</td><td id="summaryGPM">0.00%</td></tr>
-                        </table>
-                    </div>
-                </section>
+   <section id="quote-display" style="margin-bottom:34px;">
+    <h2>Current Quote</h2>
+    <div id="quoteItemsTableContainer" style="overflow-x:auto; background:#f5f8fc; border-radius:10px; margin-bottom:0; padding:8px;">
+        <table id="quoteItemsTable" style=min-width:900px;">
+            <thead>
+                <tr>
+                    <th class="col-drag"></th>
+                    <th class="col-image">Image</th>
+                    <th class="col-product-name">Product Name</th>
+                    <th class="col-product-number">P/N</th>
+                    <th class="col-description" title="Description">Desc</th>
+                    <th class="col-cost-price">Cost</th>
+                    <th class="col-markup">Markup %</th>
+                    <th class="col-msrp">MSRP</th>
+                    <th class="col-sell-price">Sell Price</th>
+                    <th class="col-qty">Qty</th>
+                    <th class="col-line-total">Line Total</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="quoteItemsTbody"></tbody>
+        </table>
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:0;">
+        <div class="equipment-summary-right" id="quote-summary" style="margin:30px 0 0 0;">
+            <h3 style="margin-top:0; color:#003366; font-size:1.1rem;">Equipment Quote Summary</h3>
+            <table id="quoteSummaryTable" style="width:100%;">
+                <tr><td>Total Equipment Client Price:</td><td id="summarySellTotal">$0.00</td></tr>
+                <tr><td>Total Equipment Company Cost:</td><td id="summaryCostTotal">$0.00</td></tr>
+                <tr><td>Equipment Profit (Difference):</td><td id="summaryProfitAmount">$0.00</td></tr>
+                <tr><td>Equipment Gross Profit Margin %:</td><td id="summaryGPM">0.00%</td></tr>
+            </table>
+        </div>
+    </div>
+    <p id="emptyQuoteMsg" style="color:#b0b0b0; text-align:center; margin:0;">Your equipment quote is currently empty.</p>
+</section>
 
                 <!-- Labor Section -->
-                <section id="labor-section" style="margin-bottom:34px;">
-                    <h2>Labor</h2>
-                    <div id="laborItemsContainer"></div>
-                    <div id="labor-summary" style="margin-top:24px; max-width:520px; background:#e6f0ff; border-radius:10px; padding:18px 22px;">
-                        <h3 style="margin-top:0; color:#003366; font-size:1.1rem;">Labor Summary</h3>
-                        <table id="laborSummaryTable" style="width:100%;">
-                            <tr><td>Total Labor Man-Hours:</td><td id="laborSummaryManHours">0.0</td></tr>
-                            <tr><td>Total Labor Company Cost:</td><td id="laborSummaryCostTotal">$0.00</td></tr>
-                            <tr><td>Total Labor Client Price:</td><td id="laborSummarySellTotal">$0.00</td></tr>
-                            <tr><td>Labor Profit (Difference):</td><td id="laborSummaryProfitAmount">$0.00</td></tr>
-                            <tr><td>Labor Gross Profit Margin %:</td><td id="laborSummaryGPM">0.00%</td></tr>
-                        </table>
-                    </div>
-                </section>
+   <section id="labor-section" style="margin-bottom:34px;">
+    <h2>Labor</h2>
+    <div id="laborItemsContainer"></div>
+    <div style="display:flex; justify-content:flex-end;">
+        <div class="labor-summary-right" id="labor-summary" style="margin-top:24px;">
+            <h3 style="margin-top:0; color:#003366; font-size:1.1rem;">Labor Summary</h3>
+            <table id="laborSummaryTable" style="width:100%;">
+                <tr><td>Total Labor Man-Hours:</td><td id="laborSummaryManHours">0.0</td></tr>
+                <tr><td>Total Labor Company Cost:</td><td id="laborSummaryCostTotal">$0.00</td></tr>
+                <tr><td>Total Labor Client Price:</td><td id="laborSummarySellTotal">$0.00</td></tr>
+                <tr><td>Labor Profit (Difference):</td><td id="laborSummaryProfitAmount">$0.00</td></tr>
+                <tr><td>Labor Gross Profit Margin %:</td><td id="laborSummaryGPM">0.00%</td></tr>
+            </table>
+        </div>
+    </div>
+</section>
 
                 <!-- Grand Totals Section -->
                 <section id="grand-totals-section" style="margin-bottom:34px;">
