@@ -298,39 +298,59 @@ function renderQuoteTable() {
   } else {
     document.getElementById("emptyQuoteMsg").style.display = "none";
   }
-  tbody.innerHTML = window.quoteItems.map((item, idx) => `
-    <tr data-idx="${idx}">
-      <td class="col-drag"><span class="drag-handle" style="cursor: grab;">☰</span></td>
-      <td class="col-image">
-        <img src="${item.imageURL || 'placeholderlogoimage.png'}" 
-             alt="${item.productName || ''}">
-      </td>
-      <td class="col-product-name">${item.productName || ""}</td>
-      <td class="col-product-number">${item.productNumber || ""}</td>
-      <td class="col-description">${item.description || ""}</td>
-      <td class="col-cost-price">${typeof item.costPrice === "number" ? `$${item.costPrice.toFixed(2)}` : ""}</td>
-      <td class="col-markup">
-        <input type="number" min="0" max="1000" step="0.01" value="${item.markup ?? 0}" 
-          style="width:60px;" 
+tbody.innerHTML = window.quoteItems.map((item, idx) => `
+  <tr data-idx="${idx}">
+    <td class="col-drag"><span class="drag-handle" style="cursor: grab;">☰</span></td>
+    <td class="col-image">
+      <img src="${item.imageURL || 'placeholderlogoimage.png'}" 
+           alt="${item.productName || ''}">
+    </td>
+    <td class="col-product-name">${item.productName || ""}</td>
+    <td class="col-product-number">${item.productNumber || ""}</td>
+    <td class="col-description">${item.description || ""}</td>
+    <td class="col-cost-price">${typeof item.costPrice === "number" ? `$${item.costPrice.toFixed(2)}` : ""}</td>
+    <td class="col-markup">
+      <span class="input-symbol-wrapper">
+        <input 
+          type="number" 
+          min="0" 
+          max="1000" 
+          step="0.01" 
+          value="${item.markup ?? 0}" 
+          class="table-input-small"
           onchange="updateQuoteItem(${idx}, 'markup', this.value)">
-      </td>
-      <td class="col-msrp">${typeof item.msrp === "number" ? `$${item.msrp.toFixed(2)}` : ""}</td>
-      <td class="col-sell-price">
-        <input type="number" min="0" step="0.01" value="${item.sellPrice ?? 0}" 
-          style="width:90px;" 
+        <span class="input-symbol input-symbol-right">%</span>
+      </span>
+    </td>
+    <td class="col-msrp">${typeof item.msrp === "number" ? `$${item.msrp.toFixed(2)}` : ""}</td>
+    <td class="col-sell-price">
+      <span class="input-symbol-wrapper">
+        <span class="input-symbol">$</span>
+        <input 
+          type="number" 
+          min="0" 
+          step="0.01" 
+          value="${item.sellPrice ?? 0}" 
+          class="table-input-small"
           onchange="updateQuoteItem(${idx}, 'sellPrice', this.value)">
-      </td>
-      <td class="col-qty">
-        <input type="number" min="1" step="1" value="${item.qty ?? 1}" 
-          style="width:50px;" 
-          onchange="updateQuoteItem(${idx}, 'qty', this.value)">
-      </td>
-      <td class="col-line-total">${typeof item.sellPrice === "number" && item.qty ? `$${(item.sellPrice * item.qty).toFixed(2)}` : ""}</td>
-      <td class="col-actions">
-        <button class="action-button" onclick="removeQuoteItem(${idx})">Remove</button>
-      </td>
-    </tr>
-  `).join("");
+      </span>
+    </td>
+    <td class="col-qty">
+      <input 
+        type="number" 
+        min="1" 
+        step="1" 
+        value="${item.qty ?? 1}"
+        class="table-input-qty"
+        style="text-align:center;"
+        onchange="updateQuoteItem(${idx}, 'qty', this.value)">
+    </td>
+    <td class="col-line-total">${typeof item.sellPrice === "number" && item.qty ? `$${(item.sellPrice * item.qty).toFixed(2)}` : ""}</td>
+    <td class="col-actions">
+      <button class="action-button" onclick="removeQuoteItem(${idx})">Remove</button>
+    </td>
+  </tr>
+`).join("");
   if (!window.quoteTableSortable) {
     window.quoteTableSortable = Sortable.create(tbody, {
       animation: 150,
@@ -347,6 +367,7 @@ function renderQuoteTable() {
     window.quoteTableSortable.option("disabled", false);
   }
 }
+
 function updateQuoteItem(idx, field, value) {
   if (!window.quoteItems[idx]) return;
   if (field === "markup") {
@@ -492,23 +513,18 @@ function renderLaborSections() {
   container.innerHTML = "";
 
   laborSections.forEach((section, idx) => {
-    // Defensive: ensure all arrays exist
     section.techAssignments = Array.isArray(section.techAssignments) ? section.techAssignments : [];
     section.subAssignments = Array.isArray(section.subAssignments) ? section.subAssignments : [];
-    // Sync tech assignments to numTechs
     while (section.techAssignments.length < section.numTechs) section.techAssignments.push(techList[0]);
     while (section.techAssignments.length > section.numTechs) section.techAssignments.pop();
-    // Sync sub assignments to numSubs (default to first sub option)
     while (section.subAssignments.length < section.numSubs) section.subAssignments.push(subOptions[0].value);
     while (section.subAssignments.length > section.numSubs) section.subAssignments.pop();
-    // Defensive: ensure days fields always exist and are number
     section.numTechDays = Number(section.numTechDays) || 0;
     section.numSubDays = Number(section.numSubDays) || 0;
 
-    // Tech selectors
     const techSelectors = section.techAssignments.map(
       (tech, tIdx) => `
-        <select class="form-select" onchange="setTechAssignment(${idx}, ${tIdx}, this.value)">
+        <select class="labor-select-full" onchange="setTechAssignment(${idx}, ${tIdx}, this.value)">
           ${techList.map(
             t => `<option value="${t}" ${t === tech ? "selected" : ""}>${t}</option>`
           ).join("")}
@@ -516,10 +532,9 @@ function renderLaborSections() {
       `
     ).join("");
 
-    // Subcontractor selectors (dropdown with rates)
     const subSelectors = section.subAssignments.map(
       (sub, sIdx) => `
-        <select class="form-select" onchange="setSubAssignment(${idx}, ${sIdx}, this.value)">
+        <select class="labor-select-full" onchange="setSubAssignment(${idx}, ${sIdx}, this.value)">
           ${subOptions.map(
             opt => `<option value="${opt.value}" ${opt.value === sub ? "selected" : ""}>${opt.label}</option>`
           ).join("")}
@@ -527,53 +542,82 @@ function renderLaborSections() {
       `
     ).join("");
 
-    // For prewire and installation, Client Rate is on same row as Days Per Tech
     const isPrewireOrInstall = section.id === "prewire" || section.id === "installation";
 
-    // Use grid layout for better spacing
-    let cardContent = `
-      <div class="labor-card-flexrows">
-        <div class="labor-col">
-          <label>Internal Technicians</label>
-          <input type="number" min="0" max="10" value="${section.numTechs}" step="1"
-            class="form-control" onchange="setNumTechs(${idx}, this.value)">
-          <div class="tech-selectors">${techSelectors}</div>
-        </div>
-        <div class="labor-col">
-          <label>Days Per Tech</label>
-          <input type="number" min="0" step="1" value="${section.numTechDays}"
-            class="form-control" onchange="setNumTechDays(${idx}, this.value)">
-        </div>
-        ${isPrewireOrInstall ?
-          `<div class="labor-col">
-            <label>Client Rate (per Man-Hour)</label>
-            <input type="number" min="0" step="0.01" value="${section.clientRate}" class="form-control"
-              onchange="setClientRate(${idx}, this.value)">
-          </div>` : ''
-        }
-        ${section.showSubs ? `
-          <div class="labor-col">
-            <label>Subcontractors</label>
-            <input type="number" min="0" max="10" value="${section.numSubs}" step="1"
-              class="form-control" onchange="setNumSubs(${idx}, this.value)">
-            <div class="sub-selectors">${subSelectors}</div>
-          </div>
-          <div class="labor-col">
-            <label>Days (Subs)</label>
-            <input type="number" min="0" step="1" value="${section.numSubDays}"
-              class="form-control" onchange="setNumSubDays(${idx}, this.value)">
-          </div>
-        ` : ''}
-        <div class="labor-card-summary" style="grid-column: 1 / -1;">
-          <p>Total Man-Hours: <strong id="labor-manhrs-${idx}">${(section.manHours||0).toFixed(1)}</strong></p>
-          <p>Total Client Cost: <strong id="labor-clientcost-${idx}">$${(section.clientCost||0).toFixed(2)}</strong></p>
-          <p>Total Company Cost: <strong id="labor-companycost-${idx}">$${(section.companyCost||0).toFixed(2)}</strong></p>
-          <p>Gross Profit Margin: <strong id="labor-gpm-${idx}">${(section.gpm||0).toFixed(1)}%</strong></p>
-        </div>
-      </div>
-    `;
+    let cardContent = '';
 
-    // Build the card layout
+if (isPrewireOrInstall) {
+      // THIS IS THE OLD STRUCTURE WITH THE SUMMARY OUTSIDE THE GRID
+      cardContent = `
+        <div class="labor-card-grid">
+            <div class="labor-col internal-tech-col">
+                <label>Internal Technicians</label>
+                <input type="number" min="0" max="10" value="${section.numTechs}" step="1" class="labor-input-small" onchange="setNumTechs(${idx}, this.value)">
+                <div class="tech-selectors">${techSelectors}</div>
+            </div>
+            <div class="labor-col days-tech-col">
+                <label>Days Per Tech</label>
+                <input type="number" min="0" step="1" value="${section.numTechDays}" class="labor-input-small" onchange="setNumTechDays(${idx}, this.value)">
+            </div>
+            <div class="labor-col rate-col">
+                <label>Client Rate (per Man-Hour)</label>
+                <input type="number" min="0" step="0.01" value="${section.clientRate}" class="labor-input-small" onchange="setClientRate(${idx}, this.value)">
+            </div>
+
+            <div class="subcontractor-group">
+                <div class="labor-col subs-col">
+                    <label>Subcontractors</label>
+                    <input type="number" min="0" max="10" value="${section.numSubs}" step="1" class="labor-input-small" onchange="setNumSubs(${idx}, this.value)">
+                    <div class="sub-selectors">${subSelectors}</div>
+                </div>
+                <div class="labor-col days-sub-col">
+                    <label>Days (Subs)</label>
+                    <input type="number" min="0" step="1" value="${section.numSubDays}" class="labor-input-small" onchange="setNumSubDays(${idx}, this.value)">
+                </div>
+            </div>
+        </div>
+        <div class="labor-card-summary">
+                <table class="summary-table-small">
+                    <tbody>
+                        <tr><td>Total Man-Hours:</td><td id="labor-manhrs-${idx}">${(section.manHours||0).toFixed(1)}</td></tr>
+                        <tr><td>Total Client Cost:</td><td id="labor-clientcost-${idx}">$${(section.clientCost||0).toFixed(2)}</td></tr>
+                        <tr><td>Total Company Cost:</td><td id="labor-companycost-${idx}">$${(section.companyCost||0).toFixed(2)}</td></tr>
+                        <tr><td>Gross Profit Margin:</td><td id="labor-gpm-${idx}">${(section.gpm||0).toFixed(1)}%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+      `;
+    } else {
+      cardContent = `
+        <div class="labor-card-flexrows">
+          <div class="labor-col">
+            <label>Internal Technicians</label>
+            <input type="number" min="0" max="10" value="${section.numTechs}" step="1"
+              class="labor-input-small" onchange="setNumTechs(${idx}, this.value)">
+            <div class="tech-selectors">${techSelectors}</div>
+          </div>
+          <div class="labor-col">
+            <label>Days Per Tech</label>
+            <input type="number" min="0" step="1" value="${section.numTechDays}" class="labor-input-small" onchange="setNumTechDays(${idx}, this.value)">
+          </div>
+          <div class="labor-col">
+            <label>Client Rate (per Man-Hour)</label>
+            <input type="number" min="0" step="0.01" value="${section.clientRate}" class="labor-input-small" onchange="setClientRate(${idx}, this.value)">
+          </div>
+          <div class="labor-card-summary">
+            <table class="summary-table-small">
+                <tbody>
+                    <tr><td>Total Man-Hours:</td><td id="labor-manhrs-${idx}">${(section.manHours||0).toFixed(1)}</td></tr>
+                    <tr><td>Total Client Cost:</td><td id="labor-clientcost-${idx}">$${(section.clientCost||0).toFixed(2)}</td></tr>
+                    <tr><td>Total Company Cost:</td><td id="labor-companycost-${idx}">${(section.companyCost||0).toFixed(2)}</td></tr>
+                    <tr><td>Gross Profit Margin:</td><td id="labor-gpm-${idx}">${(section.gpm||0).toFixed(1)}%</td></tr>
+                </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
     const card = document.createElement("div");
     card.className = "labor-card";
     card.innerHTML = `
