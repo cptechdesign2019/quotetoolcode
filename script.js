@@ -2378,8 +2378,6 @@ function showCustomerForm() {
 
 // --- Step 2: Save new customer form ---
 document.getElementById("addCustomerForm").onsubmit = async function(e) {
-// --- Step 2: Save new customer form ---
-document.getElementById("addCustomerForm").onsubmit = async function(e) {
   e.preventDefault();
   
   try {
@@ -2462,7 +2460,6 @@ document.getElementById("addCustomerForm").onsubmit = async function(e) {
     submitBtn.disabled = false;
   }
 };
-
 // --- Step 3: Enter project name and create quote ---
 document.getElementById("createQuoteBtn").onclick = function() {
   console.log("Create Quote button clicked!");
@@ -2493,11 +2490,49 @@ document.getElementById("createQuoteBtn").onclick = function() {
     window.activeCustomerForQuote = window.selectedCustomerAccount;
     window.activeProjectName = projectName;
     
-    // Set the project name in the main quote builder
+    // Set the project name in the main quote builder - with error checking
     const projectNameField = document.getElementById("projectNameNumber");
     if (projectNameField) {
       projectNameField.value = projectName;
       console.log("Set project name field to:", projectName);
+    } else {
+      console.warn("projectNameNumber field not found, checking alternative IDs...");
+      
+      // Try alternative field names that might exist
+      const alternatives = [
+        "projectName", 
+        "quoteProjectName", 
+        "projectTitle",
+        "projectNameInput"
+      ];
+      
+      let fieldFound = false;
+      for (const altId of alternatives) {
+        const altField = document.getElementById(altId);
+        if (altField) {
+          altField.value = projectName;
+          console.log(`Set project name using alternative field: ${altId}`);
+          fieldFound = true;
+          break;
+        }
+      }
+      
+      if (!fieldFound) {
+        console.warn("No project name field found - quote will be created without setting the project name field");
+      }
+    }
+    
+    // Set customer in the quote builder dropdown if it exists
+    const customerDropdown = document.getElementById("customerAccountSelector");
+    if (customerDropdown && window.selectedCustomerAccount) {
+      customerDropdown.value = window.selectedCustomerAccount.id;
+      console.log("Set customer dropdown to:", window.selectedCustomerAccount.id);
+      
+      // Trigger the customer selection handler
+      if (typeof handleCustomerSelection === 'function') {
+        handleCustomerSelection();
+        console.log("Triggered customer selection handler");
+      }
     }
     
     // Close the modal
@@ -2761,7 +2796,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Add modal close handlers
+
 // Add modal close handlers
 document.getElementById("closeCustomerModalBtn").onclick = function() {
   document.getElementById("customerAccountModal").style.display = "none";
