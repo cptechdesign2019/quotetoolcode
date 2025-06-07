@@ -2380,183 +2380,84 @@ function showCustomerForm() {
 document.getElementById("addCustomerForm").onsubmit = async function(e) {
   e.preventDefault();
   
+  const firstName = document.getElementById("customerFirstName").value.trim();
+  const lastName = document.getElementById("customerLastName").value.trim();
+  const companyName = document.getElementById("customerCompanyName").value.trim();
+  const email = document.getElementById("customerEmail").value.trim();
+  const phone = document.getElementById("customerPhone").value.trim();
+  const billingAddress = document.getElementById("customerBillingAddress").value.trim();
+  
+  if (!firstName || !lastName || !email || !phone) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+  
   try {
-    // Show loading state
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = "Saving...";
-    submitBtn.disabled = true;
-    
-    // Gather customer info
-    const firstName = document.getElementById("customerFirstName").value.trim();
-    const lastName = document.getElementById("customerLastName").value.trim();
-    const companyName = document.getElementById("customerCompanyName").value.trim();
-    const email = document.getElementById("customerEmail").value.trim();
-    const phone = document.getElementById("customerPhone").value.trim();
-    const billingAddress = document.getElementById("customerBillingAddress").value.trim();
-    const type = window.newCustomerType;
-
-    // Validation
-    if (!firstName || !lastName || !email || !phone) {
-      throw new Error("Please fill in all required fields");
-    }
-
-    if (type === "commercial" && !companyName) {
-      throw new Error("Company name is required for commercial customers");
-    }
-
-    // Keywords for search functionality
-    let keywords = [
-      firstName.toLowerCase(),
-      lastName.toLowerCase(),
-      email.toLowerCase(),
-      ...(companyName ? [companyName.toLowerCase()] : [])
-    ];
-
-    // Customer data object
     const customerData = {
-      firstName,
-      lastName,
-      companyName: companyName || "",
-      email,
-      phone,
-      billingAddress: billingAddress || "",
-      type,
-      created: firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy: currentUser ? currentUser.email : 'unknown',
-      searchKeywords: keywords
+      firstName, lastName, companyName, email, phone, billingAddress,
+      type: window.newCustomerType || "residential",
+      createdAt: new Date().toISOString()
     };
-
-    // Save to Firestore
-    const docRef = await db.collection("customerAccounts").add(customerData);
     
-    // Set as selected customer for this quote
-    window.selectedCustomerAccount = {
+    // Save to Firestore
+    const docRef = await db.collection("customers").add(customerData);
+    
+    // **ADD THIS: Set the selected customer with the new data and ID**
+    window.selectedCustomer = {
       id: docRef.id,
       ...customerData
     };
     
-    // Show success message
-    if (typeof showNotification === 'function') {
-      showNotification("Customer account saved successfully!", "success");
-    }
+    // Update the customer selector dropdown
+    await loadCustomerDropdown();
+    document.getElementById("customerAccountSelector").value = docRef.id;
+    updateSelectedCustomerDisplay(window.selectedCustomer);
     
-    // Move to project name step
+    // Move to step 3 (project name)
     document.getElementById("addCustomerForm").style.display = "none";
     document.getElementById("customerStep3").style.display = "";
-    document.getElementById("projectNameInput").focus();
-    
-    // Reset button
-    submitBtn.textContent = originalText;
-    submitBtn.disabled = false;
     
   } catch (error) {
     console.error("Error saving customer:", error);
-    alert("Error saving customer: " + error.message);
-    
-    // Reset button
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    submitBtn.textContent = "Save Customer Account";
-    submitBtn.disabled = false;
+    alert("Error saving customer. Please try again.");
   }
 };
 // --- Step 3: Enter project name and create quote ---
 document.getElementById("createQuoteBtn").onclick = function() {
-  console.log("Create Quote button clicked!");
-  
   const projectName = document.getElementById("projectNameInput").value.trim();
-  console.log("Project name:", projectName);
-  console.log("Selected customer:", window.selectedCustomerAccount);
-  
-  // Validation
-  if (!window.selectedCustomerAccount) {
-    console.error("No customer selected");
-    alert("Error: No customer selected. Please go back and select a customer.");
-    return;
-  }
   
   if (!projectName) {
-    console.error("No project name entered");
     alert("Please enter a project name.");
-    document.getElementById("projectNameInput").focus();
     return;
   }
   
-  console.log("Validation passed, creating quote...");
-  
-  try {
-    // Store the project name and customer info
-    window.selectedProjectName = projectName;
-    window.activeCustomerForQuote = window.selectedCustomerAccount;
-    window.activeProjectName = projectName;
-    
-    // Set the project name in the main quote builder - with error checking
-    const projectNameField = document.getElementById("projectNameNumber");
-    if (projectNameField) {
-      projectNameField.value = projectName;
-      console.log("Set project name field to:", projectName);
-    } else {
-      console.warn("projectNameNumber field not found, checking alternative IDs...");
-      
-      // Try alternative field names that might exist
-      const alternatives = [
-        "projectName", 
-        "quoteProjectName", 
-        "projectTitle",
-        "projectNameInput"
-      ];
-      
-      let fieldFound = false;
-      for (const altId of alternatives) {
-        const altField = document.getElementById(altId);
-        if (altField) {
-          altField.value = projectName;
-          console.log(`Set project name using alternative field: ${altId}`);
-          fieldFound = true;
-          break;
-        }
-      }
-      
-      if (!fieldFound) {
-        console.warn("No project name field found - quote will be created without setting the project name field");
-      }
-    }
-    
-    // Set customer in the quote builder dropdown if it exists
-    const customerDropdown = document.getElementById("customerAccountSelector");
-    if (customerDropdown && window.selectedCustomerAccount) {
-      customerDropdown.value = window.selectedCustomerAccount.id;
-      console.log("Set customer dropdown to:", window.selectedCustomerAccount.id);
-      
-      // Trigger the customer selection handler
-      if (typeof handleCustomerSelection === 'function') {
-        handleCustomerSelection();
-        console.log("Triggered customer selection handler");
-      }
-    }
-    
-    // Close the modal
-    document.getElementById("customerAccountModal").style.display = "none";
-    console.log("Closed modal");
-    
-    // Reset the modal for next time
-    if (typeof resetCustomerModal === 'function') {
-      resetCustomerModal();
-      console.log("Reset modal");
-    }
-    
-    // Show success notification
-    if (typeof showNotification === 'function') {
-      showNotification(`New quote created for ${projectName}!`, "success");
-      console.log("Showed notification");
-    }
-    
-    console.log("Quote creation completed successfully!");
-    
-  } catch (error) {
-    console.error("Error creating quote:", error);
-    alert("Error creating quote: " + error.message);
+  // Check if customer is selected
+  if (!window.selectedCustomer) {
+    alert("No customer selected. Please select a customer first.");
+    return;
   }
+  
+  // Set project info
+  document.getElementById("projectNameNumber").value = projectName;
+  
+  // Clear quote data for new quote
+  window.quoteItems = [];
+  window.laborItems = [
+    { name: "Basic Install", numTechs: 2, numTechDays: 1, numSubs: 0, numSubDays: 0, clientRate: 150, techAssignments: [], subAssignments: [] }
+  ];
+  
+  // Update displays
+  renderQuoteTable();
+  renderLaborSections();
+  updateQuoteSummary();
+  updateLaborSummary();
+  updateGrandTotals();
+  
+  // Close modal and switch to quote builder
+  closeCustomerModal();
+  showMainTab("quote-builder");
+  
+  showNotification("New quote created successfully!", "success");
 };
 
 // ----------- LOAD AND RENDER CUSTOMERS TABLE -----------
