@@ -2667,3 +2667,16 @@ input[type="submit"],
   min-width: 0;
   box-sizing: border-box;
 }
+
+.modal-centered {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 10000 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
