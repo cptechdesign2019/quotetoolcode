@@ -287,7 +287,9 @@ mainTabs.forEach(({ btn, page }) => {
       document.getElementById("customersLoginEmail").value = "";
       document.getElementById("customersLoginPassword").value = "";
       document.getElementById("customersLoginError").style.display = "none";
-      document.getElementById("customersLoginModal").style.display = "flex";
+      const modal = document.getElementById("customersLoginModal");
+      modal.className = "modal-centered";
+      modal.style.display = "flex";
       // Hide customers page if it's visible
       document.getElementById("customers-page").style.display = "none";
       // Deactivate tab
@@ -1076,45 +1078,6 @@ document.getElementById("closeLoadQuoteSidebarBtn").onclick = function() {
   document.getElementById("loadQuoteSidebar").style.display = "none";
 };
 
-
-// Restore customer selection
-if (q.customerId && q.customerInfo) {
-  // Wait for customer dropdown to load first
-  await loadCustomerDropdown();
-  
-  // Set the customer data
-  window.selectedQuoteCustomer = {
-    id: q.customerId,
-    ...q.customerInfo
-  };
-  
-  // Set dropdown value
-  document.getElementById("customerAccountSelector").value = q.customerId;
-  
-  // Update display with the customer data
-  updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
-  
-  // Show customer info section
-  document.getElementById("selectedCustomerInfo").style.display = "block";
-} else {
-  // Clear customer selection
-  document.getElementById("customerAccountSelector").value = "";
-  window.selectedQuoteCustomer = null;
-  document.getElementById("selectedCustomerInfo").style.display = "none";
-}
-
-window.quoteItems = Array.isArray(q.quoteItems) ? q.quoteItems : [];
-window.laborSections = Array.isArray(q.laborSections) ? q.laborSections : [];
-
-renderQuoteTable();
-renderLaborSections();
-updateQuoteSummary();
-updateGrandTotals();
-
-document.getElementById("loadQuoteSidebar").style.display = "none";
-showNotification("Quote loaded.", "success");
-
-
 document.getElementById("saveQuoteBtn").onclick = saveQuote;
 document.getElementById("saveQuoteBarBtn").onclick = saveQuote;
 
@@ -1722,7 +1685,7 @@ async function loadQuoteFromList(quoteId) {
     }
     
     // Load the quote
-    await loadQuoteById(quoteId);
+    await loadQuote(quoteId);
     
   } catch (error) {
     console.error("Error loading quote from list:", error);
@@ -3053,32 +3016,46 @@ function resetCustomerModal() {
   window.selectedProjectName = "";
 }
 
-// Always show login modal when Customers tab is clicked
 document.getElementById("tabCustomersBtn").onclick = function() {
   document.getElementById("customersLoginEmail").value = "";
   document.getElementById("customersLoginPassword").value = "";
   document.getElementById("customersLoginError").style.display = "none";
-  document.getElementById("customersLoginModal").style.display = "block";
+
+  const modal = document.getElementById("customersLoginModal");
+  modal.removeAttribute("hidden");
+  modal.style.display = "flex";
+  modal.style.visibility = "visible";
+  modal.style.opacity = "1";
+  modal.className = "modal-centered";
 };
 
-// On login success, show the customer modal
 document.getElementById("customersModalLoginBtn").onclick = async function() {
+  alert("Login handler START!");
   const email = document.getElementById("customersLoginEmail").value.trim();
   const password = document.getElementById("customersLoginPassword").value;
   try {
     await firebase.auth().signInWithEmailAndPassword(email, password);
-    document.getElementById("customersLoginModal").style.display = "none";
-    resetCustomerModal();
-    document.getElementById("customerAccountModal").style.display = "block";
+    alert("Login SUCCESS! Now hiding modal...");
+    const modal = document.getElementById("customersLoginModal");
+    modal.style.display = "none";
+    modal.style.visibility = "hidden";
+    modal.style.opacity = "0";
+    modal.removeAttribute("class");
+    modal.setAttribute("hidden", "true");
+    alert("Modal should be gone. Did it work?");
+    // ...rest of your code...
   } catch (e) {
+    alert("Login FAILED: " + e.message);
     document.getElementById("customersLoginError").textContent = e.message || "Login failed.";
     document.getElementById("customersLoginError").style.display = "block";
   }
 };
 
-// Hide modal
+// Hide customer account modal (this is separate from the login modal)
 function closeCustomerModal() {
-  document.getElementById("customerAccountModal").style.display = "none";
+  const modal = document.getElementById("customerAccountModal");
+  modal.style.display = "none";
+  modal.className = ""; // Remove any centering classes if applied
 }
 
 // --- Step 1: Search existing customers ---
