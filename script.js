@@ -14,88 +14,43 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ------------- GOOGLE MAPS API LOADER ------------- 
+// Add this function at the top of your script.js file
 function loadGoogleMapsAPI() {
   return new Promise((resolve, reject) => {
     // Check if already loaded
     if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-      console.log("Google Maps API already loaded");
       resolve();
       return;
     }
 
-    // Check if script is already being loaded
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      console.log("Google Maps script already exists, waiting for load...");
-      // Wait for existing script to load
-      const checkLoaded = setInterval(() => {
-        if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-          clearInterval(checkLoaded);
-          resolve();
-        }
-      }, 100);
-      
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        clearInterval(checkLoaded);
-        reject(new Error('Timeout waiting for Google Maps API to load'));
-      }, 10000);
-      return;
-    }
-
-    console.log("Loading Google Maps API...");
-    
     // Create script element
     const script = document.createElement('script');
     script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDZOJCVFdUqMDwPfTz8-2F-YEOeP_l_IBY&libraries=places&loading=async';
     script.async = true;
     script.defer = true;
     
-    // Set up a polling mechanism instead of relying on onload
     script.onload = () => {
-      console.log("Google Maps script loaded, checking for API availability...");
-      
-      // Poll for Google Maps API availability
-      let attempts = 0;
-      const maxAttempts = 50; // 5 seconds max
-      
-      const checkAPI = setInterval(() => {
-        attempts++;
-        console.log(`Checking Google Maps API availability (attempt ${attempts})`);
-        
-        if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-          console.log("Google Maps API is now available!");
-          clearInterval(checkAPI);
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          clearInterval(checkAPI);
-          reject(new Error('Google Maps API failed to initialize after loading'));
-        }
-      }, 100);
+      if (typeof google !== 'undefined' && google.maps && google.maps.places) {
+        resolve();
+      } else {
+        reject(new Error('Google Maps API failed to load'));
+      }
     };
     
-    script.onerror = (error) => {
-      console.error("Failed to load Google Maps script:", error);
-      reject(new Error('Failed to load Google Maps API script'));
-    };
+    script.onerror = () => reject(new Error('Failed to load Google Maps API script'));
     
     document.head.appendChild(script);
   });
 }
 
-// Updated initAutocomplete function with better error handling
+// Updated initAutocomplete function
 async function initAutocomplete() {
   console.log("initAutocomplete called");
   
   try {
-    // Load Google Maps API with timeout
-    console.log("Attempting to load Google Maps API...");
+    // Load Google Maps API if not already loaded
     await loadGoogleMapsAPI();
     console.log("Google Maps API loaded successfully");
-    
-    // Wait a bit more for API to be fully ready
-    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Initialize autocomplete for billing address in customer form
     const billingAddressInput = document.getElementById("customerBillingAddress");
@@ -121,40 +76,35 @@ async function initAutocomplete() {
       } catch (error) {
         console.error("Error initializing customer billing address autocomplete:", error);
       }
-    } else {
-      console.log("Customer billing address input not found - form may not be visible yet");
     }
     
-    // Initialize for project address if it exists
-    const projectAddressInput = document.getElementById("customerProjectAddress");
+    // Initialize for edit customer modal
+    const editBillingAddressInput = document.getElementById("editCustomerBillingAddress");
     
-    if (projectAddressInput) {
-      console.log("Initializing autocomplete for customer project address");
+    if (editBillingAddressInput) {
+      console.log("Initializing autocomplete for edit customer billing address");
       try {
-        const projectAddressAutocomplete = new google.maps.places.Autocomplete(projectAddressInput, {
+        const editBillingAutocomplete = new google.maps.places.Autocomplete(editBillingAddressInput, {
           types: ['address'],
           componentRestrictions: { country: 'us' },
           fields: ['formatted_address', 'address_components', 'geometry']
         });
         
-        projectAddressAutocomplete.addListener('place_changed', function() {
-          const place = projectAddressAutocomplete.getPlace();
-          console.log("Project place selected:", place.formatted_address);
+        editBillingAutocomplete.addListener('place_changed', function() {
+          const place = editBillingAutocomplete.getPlace();
           if (place.formatted_address) {
-            projectAddressInput.value = place.formatted_address;
+            editBillingAddressInput.value = place.formatted_address;
           }
         });
         
-        console.log("Customer project address autocomplete initialized successfully");
+        console.log("Edit customer billing address autocomplete initialized successfully");
       } catch (error) {
-        console.error("Error initializing customer project address autocomplete:", error);
+        console.error("Error initializing edit billing address autocomplete:", error);
       }
     }
     
   } catch (error) {
     console.error("Failed to load Google Maps API:", error);
-    console.log("Address autocomplete will not be available");
-    // Don't throw error - let the app continue without autocomplete
   }
 }
 
@@ -174,37 +124,58 @@ firebase.auth().onAuthStateChanged(user => {
 let products = [];
 let filteredProducts = [];
 let selectedProduct = null;
-
+let templates = [];
+let savedQuotes = [];
+let activeQuoteId = null;
+let activeTemplateId = null;
 
 // Global variable to store the selected customer for the current quote
 window.selectedQuoteCustomer = null;
 
 // Load customers into the dropdown
 async function loadCustomerDropdown() {
+  const dropdown = document.getElementById("customerAccountSelector");
+  if (!dropdown) return;
+  
   try {
-    console.log("Loading customer dropdown...");
+    dropdown.innerHTML = '<option value="">Loading customers...</option>';
     
-    const snapshot = await db.collection("customerAccounts").orderBy("created", "desc").get();
-    const dropdown = document.getElementById("customerAccountSelector");
+    const snapshot = await db.collection("customerAccounts")
+      .orderBy("firstName")
+      .get();
     
-    if (dropdown) {
-      // Clear existing options except the default
-      dropdown.innerHTML = '<option value="">Select a customer account...</option>';
-      
-      snapshot.forEach(doc => {
-        const customer = { id: doc.id, ...doc.data() };
-        console.log("Adding customer to dropdown:", customer);
-        
-        const option = document.createElement("option");
-        option.value = customer.id;
-        option.textContent = `${customer.firstName} ${customer.lastName}${customer.companyName ? ` (${customer.companyName})` : ''}`;
-        dropdown.appendChild(option);
-      });
-      
-      console.log(`Loaded ${snapshot.size} customers to dropdown`);
+    dropdown.innerHTML = '<option value="">-- Select Customer Account --</option>';
+    
+    if (snapshot.empty) {
+      dropdown.innerHTML += '<option value="" disabled>No customers found</option>';
+      return;
     }
+    
+    snapshot.forEach(doc => {
+      const customer = doc.data();
+      const option = document.createElement("option");
+      option.value = doc.id;
+      
+      // Create display name based on customer type
+      let displayName = "";
+      if (customer.type === "commercial" && customer.companyName) {
+        displayName = `${customer.companyName} (${customer.firstName} ${customer.lastName})`;
+      } else {
+        displayName = `${customer.firstName} ${customer.lastName}`;
+      }
+      
+      option.textContent = displayName;
+      option.setAttribute('data-customer', JSON.stringify({
+        id: doc.id,
+        ...customer
+      }));
+      
+      dropdown.appendChild(option);
+    });
+    
   } catch (error) {
-    console.error("Error loading customer dropdown:", error);
+    console.error("Error loading customers:", error);
+    dropdown.innerHTML = '<option value="">Error loading customers</option>';
   }
 }
 
@@ -282,7 +253,18 @@ const mainTabs = [
 mainTabs.forEach(({ btn, page }) => {
   document.getElementById(btn).addEventListener("click", () => {
     // Special security for Customers tab
-    
+    if (btn === "tabCustomersBtn") {
+      // Always show login modal when tab is clicked
+      document.getElementById("customersLoginEmail").value = "";
+      document.getElementById("customersLoginPassword").value = "";
+      document.getElementById("customersLoginError").style.display = "none";
+      document.getElementById("customersLoginModal").style.display = "flex";
+      // Hide customers page if it's visible
+      document.getElementById("customers-page").style.display = "none";
+      // Deactivate tab
+      document.getElementById("tabCustomersBtn").classList.remove("active");
+      return; // Do not show the customers page until login
+    }
     // Show the requested main section, hide others
     mainTabs.forEach(({ btn: b, page: p }) => {
       document.getElementById(b).classList.toggle("active", b === btn);
@@ -368,8 +350,10 @@ document.getElementById("logoutButton").onclick = function() {
 // ------------- INITIAL DATA LOAD -------------
 async function loadInitialData() {
   await loadProducts();
+  await loadQuotesAndTemplates();
   await loadCustomerDropdown();
   renderLaborSections();
+  renderSidebar();
   updateGrandTotals();
   initTinyMCE();
   renderTaskListTable();
@@ -1060,844 +1044,248 @@ function updateGrandTotals() {
   document.getElementById(id).onchange = updateGrandTotals;
 });
 
-
+// ------------- QUOTES & TEMPLATES LOAD/SIDEBAR -------------
+async function loadQuotesAndTemplates() {
+  const quotesSnap = await db.collection("quotes").orderBy("lastEditedAt", "desc").get();
+  savedQuotes = quotesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const templatesSnap = await db.collection("templates").orderBy("lastEditedAt", "desc").get();
+  templates = templatesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+function renderSidebar() {
+  const savedQuotesList = document.getElementById("savedQuotesList");
+  savedQuotesList.innerHTML = "";
+  savedQuotes.forEach(q => {
+    const li = document.createElement("li");
+    const row = document.createElement("div");
+    row.className = "quote-sidebar-row";
+    const mainBtn = document.createElement("button");
+    mainBtn.textContent = q.projectNameNumber || "(No Project Name)";
+    mainBtn.className = "sidebar-load-btn";
+    mainBtn.style.background = "none";
+    mainBtn.style.border = "none";
+    mainBtn.style.padding = "0";
+    mainBtn.style.color = "#003366";
+    mainBtn.style.fontWeight = "600";
+    mainBtn.style.fontSize = "1.04em";
+    mainBtn.style.cursor = "pointer";
+    mainBtn.onclick = () => loadQuoteById(q.id);
+    row.appendChild(mainBtn);
+    const delBtn = document.createElement("button");
+    delBtn.className = "sidebar-delete-btn";
+    delBtn.title = "Delete";
+    delBtn.innerHTML = "&#10005;";
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm("Delete this saved quote? This can't be undone.")) {
+        db.collection("quotes").doc(q.id).delete().then(() => {
+          savedQuotes = savedQuotes.filter(qq => qq.id !== q.id);
+          renderSidebar();
+          showNotification("Quote deleted.", "success");
+        }).catch(err => {
+          showNotification("Failed to delete quote.", "error");
+        });
+      }
+    };
+    row.appendChild(delBtn);
+    li.appendChild(row);
+    const meta = document.createElement("div");
+    meta.className = "quote-sidebar-meta";
+    let status = q.quoteStatus || "Draft";
+    let who = q.lastEditedBy || "";
+    let when = q.lastEditedAt && q.lastEditedAt.toDate ? q.lastEditedAt.toDate() : null;
+    let whenStr = when ? when.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+    meta.innerHTML = `<div>Status: <b>${status}</b></div><div>Last edited by: <b>${who}</b></div>${whenStr ? `<div>${whenStr}</div>` : ""}`;
+    li.appendChild(meta);
+    savedQuotesList.appendChild(li);
+  });
+  const templateList = document.getElementById("templateList");
+  templateList.innerHTML = "";
+  templates.forEach(t => {
+    const li = document.createElement("li");
+    const row = document.createElement("div");
+    row.className = "quote-sidebar-row";
+    const mainBtn = document.createElement("button");
+    mainBtn.textContent = t.templateName || "(No Template Name)";
+    mainBtn.className = "sidebar-load-btn";
+    mainBtn.style.background = "none";
+    mainBtn.style.border = "none";
+    mainBtn.style.padding = "0";
+    mainBtn.style.color = "#003366";
+    mainBtn.style.fontWeight = "600";
+    mainBtn.style.fontSize = "1.04em";
+    mainBtn.style.cursor = "pointer";
+    mainBtn.onclick = () => loadTemplateById(t.id);
+    row.appendChild(mainBtn);
+    const delBtn = document.createElement("button");
+    delBtn.className = "sidebar-delete-btn";
+    delBtn.title = "Delete";
+    delBtn.innerHTML = "&#10005;";
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm("Delete this template? This can't be undone.")) {
+        db.collection("templates").doc(t.id).delete().then(() => {
+          templates = templates.filter(tt => tt.id !== t.id);
+          renderSidebar();
+          showNotification("Template deleted.", "success");
+        }).catch(err => {
+          showNotification("Failed to delete template.", "error");
+        });
+      }
+    };
+    row.appendChild(delBtn);
+    li.appendChild(row);
+    const meta = document.createElement("div");
+    meta.className = "quote-sidebar-meta";
+    let who = t.lastEditedBy || "";
+    let when = t.lastEditedAt && t.lastEditedAt.toDate ? t.lastEditedAt.toDate() : null;
+    let whenStr = when ? when.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+    meta.innerHTML = `<div>Last edited by: <b>${who}</b></div>${whenStr ? `<div>${whenStr}</div>` : ""}`;
+    li.appendChild(meta);
+    templateList.appendChild(li);
+  });
+}
+document.getElementById("loadQuoteBarBtn").onclick = function() {
+  loadQuotesAndTemplates().then(renderSidebar);
+  document.getElementById("loadQuoteSidebar").style.display = "block";
+};
 document.getElementById("closeLoadQuoteSidebarBtn").onclick = function() {
   document.getElementById("loadQuoteSidebar").style.display = "none";
 };
+// Update the loadQuoteById function to restore customer selection
+async function loadQuoteById(id) {
+  try {
+    const doc = await db.collection("quotes").doc(id).get();
+    if (!doc.exists) throw new Error("Quote not found");
+    
+    const q = doc.data();
+    
+    document.getElementById("projectNameNumber").value = q.projectNameNumber || "";
+    document.getElementById("quoteStatusSelector").value = q.quoteStatus || "Draft";
+    document.getElementById("discountPercent").value = q.discountPercent || 0;
+    document.getElementById("shippingPercent").value = q.shippingPercent || 0;
+    document.getElementById("salesTaxPercent").value = q.salesTaxPercent || 0;
+    document.getElementById("sowFullOutputText").value = q.sowText || "";
+    
+    // Restore customer selection
+    if (q.customerId && q.customerInfo) {
+      document.getElementById("customerAccountSelector").value = q.customerId;
+      // **Set the selected customer with the new data and ID**
+window.selectedQuoteCustomer = {
+  id: docRef.id,
+  ...customerData
+};
 
+// Update the customer selector dropdown
+await loadCustomerDropdown();
+document.getElementById("customerAccountSelector").value = docRef.id;
+updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
+
+      document.getElementById("selectedCustomerInfo").style.display = "block";
+    } else {
+      document.getElementById("customerAccountSelector").value = "";
+      window.selectedQuoteCustomer = null;
+      document.getElementById("selectedCustomerInfo").style.display = "none";
+    }
+    
+    window.quoteItems = Array.isArray(q.quoteItems) ? q.quoteItems : [];
+    window.laborSections = Array.isArray(q.laborSections) ? q.laborSections : [];
+    
+    activeQuoteId = id;
+    activeTemplateId = null;
+    
+    renderQuoteTable();
+    renderLaborSections();
+    updateQuoteSummary();
+    updateGrandTotals();
+    
+    document.getElementById("loadQuoteSidebar").style.display = "none";
+    showNotification("Quote loaded.", "success");
+  } catch (e) {
+    showNotification("Failed to load quote.", "error");
+  }
+}
+
+async function loadTemplateById(id) {
+  try {
+    const doc = await db.collection("templates").doc(id).get();
+    if (!doc.exists) throw new Error("Template not found");
+    const t = doc.data();
+    document.getElementById("projectNameNumber").value = t.templateName || "";
+    document.getElementById("quoteStatusSelector").value = "Draft";
+    document.getElementById("discountPercent").value = t.discountPercent || 0;
+    document.getElementById("shippingPercent").value = t.shippingPercent || 0;
+    document.getElementById("salesTaxPercent").value = t.salesTaxPercent || 0;
+    document.getElementById("sowFullOutputText").value = t.sowText || "";
+    window.quoteItems = Array.isArray(t.quoteItems) ? t.quoteItems : [];
+    window.laborSections = Array.isArray(t.laborSections) ? t.laborSections : [];
+    activeQuoteId = null;
+    activeTemplateId = id;
+    renderQuoteTable();
+    renderLaborSections();
+    updateQuoteSummary();
+    updateGrandTotals();
+    document.getElementById("loadQuoteSidebar").style.display = "none";
+    showNotification("Template loaded.", "success");
+  } catch (e) {
+    showNotification("Failed to load template.", "error");
+  }
+}
 document.getElementById("saveQuoteBtn").onclick = saveQuote;
 document.getElementById("saveQuoteBarBtn").onclick = saveQuote;
-
-
-// ------------- CLEAN QUOTE SAVE/LOAD SYSTEM -------------
-
-// ------------- CALCULATION FUNCTIONS -------------
-function calculateSubtotal() {
-  try {
-    let subtotal = 0;
-    
-    if (window.quoteItems && Array.isArray(window.quoteItems)) {
-      subtotal += window.quoteItems.reduce((sum, item) => {
-        const price = parseFloat(item.price) || 0;
-        const quantity = parseInt(item.quantity) || 1;
-        return sum + (price * quantity);
-      }, 0);
-    }
-    
-    if (window.laborSections && Array.isArray(window.laborSections)) {
-      subtotal += window.laborSections.reduce((sum, section) => {
-        const rate = parseFloat(section.rate) || 0;
-        const hours = parseFloat(section.hours) || 0;
-        return sum + (rate * hours);
-      }, 0);
-    }
-    
-    return subtotal;
-  } catch (error) {
-    console.error("Error calculating subtotal:", error);
-    return 0;
-  }
-}
-
-function calculateTax() {
-  try {
-    const subtotal = calculateSubtotal();
-    const taxRate = 0.08; // 8% tax rate
-    return subtotal * taxRate;
-  } catch (error) {
-    console.error("Error calculating tax:", error);
-    return 0;
-  }
-}
-
-function calculateTotal() {
-  try {
-    return calculateSubtotal() + calculateTax();
-  } catch (error) {
-    console.error("Error calculating total:", error);
-    return 0;
-  }
-}
-
-function formatCurrency(amount) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount || 0);
-  } catch (error) {
-    console.error("Error formatting currency:", error);
-    return "$0.00";
-  }
-}
-
-function updateQuoteTotals() {
-  try {
-    const subtotal = calculateSubtotal();
-    const tax = calculateTax();
-    const total = calculateTotal();
-    
-    const subtotalElement = document.getElementById("quoteSubtotal");
-    if (subtotalElement) {
-      subtotalElement.textContent = formatCurrency(subtotal);
-    }
-    
-    const taxElement = document.getElementById("quoteTax");
-    if (taxElement) {
-      taxElement.textContent = formatCurrency(tax);
-    }
-    
-    const totalElement = document.getElementById("quoteTotal");
-    if (totalElement) {
-      totalElement.textContent = formatCurrency(total);
-    }
-  } catch (error) {
-    console.error("Error updating quote totals in UI:", error);
-  }
-}
-
-// ------------- SAVE QUOTE FUNCTION -------------
+// Update the saveQuote function to include customer information
 async function saveQuote() {
   try {
-    console.log("Starting quote save process...");
-    
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      showNotification("Please log in to save quotes", "error");
-      return;
-    }
-    
-    const projectName = document.getElementById("projectNameNumber").value.trim();
-    if (!projectName) {
-      showNotification("Please enter a project name", "error");
-      return;
-    }
+    const projectNameNumber = document.getElementById("projectNameNumber").value.trim();
+    const quoteStatus = document.getElementById("quoteStatusSelector").value;
+    const discountPercent = parseFloat(document.getElementById("discountPercent").value) || 0;
+    const shippingPercent = parseFloat(document.getElementById("shippingPercent").value) || 0;
+    const salesTaxPercent = parseFloat(document.getElementById("salesTaxPercent").value) || 0;
+    const sowText = document.getElementById("sowFullOutputText").value;
     
     const quoteData = {
-      projectName: projectName,
+      projectNameNumber,
+      quoteStatus,
+      discountPercent,
+      shippingPercent,
+      salesTaxPercent,
+      sowText,
+      quoteItems: JSON.parse(JSON.stringify(window.quoteItems)),
+      laborSections: JSON.parse(JSON.stringify(window.laborSections)),
+      // Add customer information
       customerId: window.selectedQuoteCustomer ? window.selectedQuoteCustomer.id : null,
-      customerData: window.selectedQuoteCustomer || null,
-      quoteItems: window.quoteItems || [],
-      laborSections: window.laborSections || [],
-      quoteNumber: document.getElementById("quoteNumber") ? document.getElementById("quoteNumber").value : null,
-      quoteDate: document.getElementById("quoteDate") ? document.getElementById("quoteDate").value : new Date().toISOString().split('T')[0],
-      validUntil: document.getElementById("validUntil") ? document.getElementById("validUntil").value : null,
-      sowContent: window.tinymceInstances && window.tinymceInstances.sowAiPromptText ? 
-                  window.tinymceInstances.sowAiPromptText.getContent() : "",
-      taskList: window.taskList || [],
-      subtotal: calculateSubtotal(),
-      tax: calculateTax(),
-      total: calculateTotal(),
-      userId: currentUser.uid,
-      createdBy: currentUser.email,
-      lastModified: firebase.firestore.FieldValue.serverTimestamp(),
-      lastModifiedBy: currentUser.email,
-      status: "draft"
+      customerInfo: window.selectedQuoteCustomer ? {
+        firstName: window.selectedQuoteCustomer.firstName,
+        lastName: window.selectedQuoteCustomer.lastName,
+        companyName: window.selectedQuoteCustomer.companyName,
+        email: window.selectedQuoteCustomer.email,
+        phone: window.selectedQuoteCustomer.phone,
+        billingAddress: window.selectedQuoteCustomer.billingAddress,
+        type: window.selectedQuoteCustomer.type
+      } : null,
+      lastEditedBy: currentUser ? currentUser.email : 'unknown',
+      lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-    const isUpdating = window.currentQuoteId && window.currentQuoteId.trim() !== "";
-    
-    if (isUpdating) {
-      console.log("Updating existing quote:", window.currentQuoteId);
-      await db.collection("quotes").doc(window.currentQuoteId).update(quoteData);
-      showNotification(`Quote "${projectName}" updated successfully!`, "success");
-      return window.currentQuoteId;
-    } else {
-      console.log("Creating new quote");
-      quoteData.created = firebase.firestore.FieldValue.serverTimestamp();
-      
-      const docRef = await db.collection("quotes").add(quoteData);
-      window.currentQuoteId = docRef.id;
-      console.log("New quote created with ID:", docRef.id);
-      
-      showNotification(`Quote "${projectName}" saved successfully!`, "success");
-      updateQuoteTotals();
-      
-      return docRef.id;
-    }
-    
-  } catch (error) {
-    console.error("Error saving quote:", error);
-    showNotification("Error saving quote: " + error.message, "error");
-  }
-}
-
-// ------------- NEW QUOTE FUNCTION -------------
-function newQuote() {
-  try {
-    console.log("Creating new quote...");
-    
-    window.currentQuoteId = null;
-    window.quoteItems = [];
-    window.laborSections = [];
-    window.taskList = [];
-    window.selectedQuoteCustomer = null;
-    
-    const projectNameField = document.getElementById("projectNameNumber");
-    if (projectNameField) projectNameField.value = "";
-    
-    const customerDropdown = document.getElementById("customerAccountSelector");
-    if (customerDropdown) customerDropdown.value = "";
-    
-    const quoteNumberField = document.getElementById("quoteNumber");
-    if (quoteNumberField) quoteNumberField.value = "";
-    
-    const quoteDateField = document.getElementById("quoteDate");
-    if (quoteDateField) quoteDateField.value = new Date().toISOString().split('T')[0];
-    
-    const validUntilField = document.getElementById("validUntil");
-    if (validUntilField) validUntilField.value = "";
-    
-    if (window.tinymceInstances && window.tinymceInstances.sowAiPromptText) {
-      window.tinymceInstances.sowAiPromptText.setContent("");
-    }
-    
-    if (typeof refreshQuoteItemsTable === 'function') refreshQuoteItemsTable();
-    if (typeof refreshLaborTable === 'function') refreshLaborTable();
-    if (typeof refreshTaskList === 'function') refreshTaskList();
-    
-    updateQuoteTotals();
-    showNotification("New quote created", "success");
-    
-  } catch (error) {
-    console.error("Error creating new quote:", error);
-    showNotification("Error creating new quote", "error");
-  }
-}
-
-// ------------- ADD THIS DEBUGGING CODE TO CATCH WHAT'S CLEARING THE QUOTES -------------
-function watchForQuoteListChanges() {
-  const quotesListElement = document.getElementById("savedQuotesList");
-  if (!quotesListElement) return;
-  
-  // Create a MutationObserver to watch for changes
-  const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-      if (mutation.type === 'childList') {
-        console.log("🔍 MUTATION DETECTED: savedQuotesList content changed!");
-        console.log("📝 New content:", quotesListElement.innerHTML);
-        console.log("📝 Number of children:", quotesListElement.children.length);
-        
-        // Get the stack trace to see what function caused this
-        console.trace("📍 STACK TRACE - What cleared the quotes:");
-      }
-    });
-  });
-  
-  // Start observing
-  observer.observe(quotesListElement, {
-    childList: true,
-    subtree: true
-  });
-  
-  console.log("👁️ Now watching savedQuotesList for changes...");
-  
-  // Stop watching after 10 seconds
-  setTimeout(() => {
-    observer.disconnect();
-    console.log("👁️ Stopped watching savedQuotesList");
-  }, 10000);
-}
-
-// ------------- UPDATED LOAD QUOTES LIST WITH WATCHER -------------
-async function loadQuotesList() {
-  try {
-    console.log("=== LOADING QUOTES LIST ===");
-    
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      console.error("❌ No user logged in");
-      showNotification("Please log in to view quotes", "error");
-      return;
-    }
-    
-    console.log("✅ Current user email:", currentUser.email);
-    console.log("✅ Current user UID:", currentUser.uid);
-    
-    // Show the sidebar
-    const sidebar = document.getElementById("loadQuoteSidebar");
-    if (sidebar) {
-      sidebar.style.display = "block";
-      console.log("✅ Sidebar opened");
-    }
-    
-    // Check if the quotes list element exists
-    const quotesListElement = document.getElementById("savedQuotesList");
-    if (!quotesListElement) {
-      console.error("❌ savedQuotesList element not found in DOM");
-      return;
-    }
-    
-    // Start watching for changes
-    watchForQuoteListChanges();
-    
-    console.log("✅ About to show loading message");
-    
-    // Add loading message
-    quotesListElement.innerHTML = `
-      <li style="padding: 16px; text-align: center; color: #666;">
-        Loading quotes...
-      </li>
-    `;
-    
-    console.log("✅ Loading message displayed");
-    
-    // Get user's quotes
-    console.log("🔍 Querying database for quotes...");
-    const snapshot = await db.collection("quotes")
-      .where("userId", "==", currentUser.uid)
-      .get();
-    
-    console.log(`📊 Found ${snapshot.size} quotes for user`);
-    
-    // Convert to array and sort by last modified
-    const quotes = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      quotes.push({
-        id: doc.id,
-        ...data,
-        sortTimestamp: data.lastModified ? data.lastModified.toMillis() : 
-                      (data.created ? data.created.toMillis() : 0)
-      });
-    });
-    
-    quotes.sort((a, b) => b.sortTimestamp - a.sortTimestamp);
-    
-    console.log("🎨 About to display quotes...");
-    console.log("📝 Quotes to display:", quotes.map(q => ({ id: q.id, name: q.projectName })));
-    
-    // Display the quotes with the enhanced function
-    displayQuotesList(quotes);
-    
-    console.log("✅ displayQuotesList completed");
-    
-  } catch (error) {
-    console.error("❌ Error loading quotes:", error);
-    showNotification("Error loading quotes: " + error.message, "error");
-  }
-}
-
-// ------------- ENHANCED DEBUG DISPLAY FUNCTION -------------
-function displayQuotesList(quotes) {
-  try {
-    console.log("🎨 Starting displayQuotesList with", quotes.length, "quotes");
-    
-    const quotesListElement = document.getElementById("savedQuotesList");
-    if (!quotesListElement) {
-      console.error("❌ savedQuotesList element not found in displayQuotesList");
-      return;
-    }
-    
-    console.log("✅ quotesListElement found, clearing existing content");
-    quotesListElement.innerHTML = "";
-    
-    if (quotes.length === 0) {
-      console.log("📝 No quotes to display, showing empty message");
-      const noQuotesItem = document.createElement("li");
-      noQuotesItem.innerHTML = `
-        <div style="padding: 16px; text-align: center; color: #666; font-style: italic;">
-          No saved quotes found.<br>Create and save your first quote!
-        </div>`;
-      quotesListElement.appendChild(noQuotesItem);
-      console.log("✅ Empty message added");
-      return;
-    }
-    
-    console.log("🎨 Creating quote items...");
-    
-    quotes.forEach((quote, index) => {
-      console.log(`📝 Creating quote item ${index + 1}:`, quote.projectName);
-      
-      const listItem = document.createElement("li");
-      listItem.style.cssText = `
-        margin: 0 0 12px 0;
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        overflow: hidden;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      `;
-      
-      // Determine last modified info
-      let lastModified = 'Unknown';
-      let lastModifiedBy = 'Unknown';
-      if (quote.lastModified) {
-        lastModified = new Date(quote.lastModified.toDate()).toLocaleDateString();
-      } else if (quote.created) {
-        lastModified = new Date(quote.created.toDate()).toLocaleDateString();
-      }
-      
-      if (quote.lastModifiedBy) {
-        lastModifiedBy = quote.lastModifiedBy;
-      } else if (quote.updatedBy) {
-        lastModifiedBy = quote.updatedBy;
-      } else if (quote.createdBy) {
-        lastModifiedBy = quote.createdBy;
-      }
-      
-      // Get quote status with color coding
-      const status = quote.status || 'draft';
-      const statusColors = {
-        'draft': { bg: '#f8f9fa', text: '#6c757d', border: '#dee2e6' },
-        'sent': { bg: '#e3f2fd', text: '#1976d2', border: '#bbdefb' },
-        'accepted': { bg: '#e8f5e8', text: '#2e7d32', border: '#c8e6c8' },
-        'changes': { bg: '#fff3cd', text: '#856404', border: '#ffeaa7' },
-        'archived': { bg: '#f5f5f5', text: '#495057', border: '#d6d8db' }
-      };
-      
-      const statusColor = statusColors[status.toLowerCase()] || statusColors['draft'];
-      
-      listItem.innerHTML = `
-        <!-- Main clickable area -->
-        <div id="quoteMain_${quote.id}" style="
-          padding: 14px 16px;
-          cursor: pointer;
-          background: transparent;
-          transition: background-color 0.2s ease;
-        ">
-          <!-- Project name -->
-          <div style="font-weight: 600; color: #003366; margin-bottom: 6px; font-size: 1.05em;">
-            ${quote.projectName || 'Untitled Quote'}
-          </div>
-          
-          <!-- Customer info -->
-          <div style="font-size: 0.9em; color: #666; margin-bottom: 6px;">
-            ${quote.customerData ? `${quote.customerData.firstName} ${quote.customerData.lastName}` : 'No customer assigned'}
-          </div>
-          
-          <!-- Status badge -->
-          <div style="margin-bottom: 8px;">
-            <span style="
-              display: inline-block;
-              padding: 3px 8px;
-              border-radius: 12px;
-              font-size: 0.75em;
-              font-weight: 600;
-              text-transform: uppercase;
-              background: ${statusColor.bg};
-              color: ${statusColor.text};
-              border: 1px solid ${statusColor.border};
-            ">
-              ${status}
-            </span>
-          </div>
-          
-          <!-- Total and date row -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span style="font-size: 0.9em; color: #0059b3; font-weight: 600;">
-              ${formatCurrency(quote.total || 0)}
-            </span>
-            <span style="font-size: 0.8em; color: #888;">
-              ${lastModified}
-            </span>
-          </div>
-          
-          <!-- Last updated by -->
-          <div style="font-size: 0.8em; color: #999; margin-bottom: 8px;">
-            Updated by: ${lastModifiedBy}
-          </div>
-        </div>
-        
-        <!-- Action buttons bar -->
-        <div style="
-          display: flex;
-          border-top: 1px solid #e9ecef;
-          background: #f1f3f5;
-        ">
-          <button id="loadBtn_${quote.id}" style="
-            flex: 1;
-            padding: 10px;
-            background: none;
-            border: none;
-            color: #0059b3;
-            font-weight: 600;
-            font-size: 0.9em;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            border-right: 1px solid #e9ecef;
-          " title="Load this quote">
-            📄 Load
-          </button>
-          <button id="deleteBtn_${quote.id}" style="
-            flex: 1;
-            padding: 10px;
-            background: none;
-            border: none;
-            color: #dc3545;
-            font-weight: 600;
-            font-size: 0.9em;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-          " title="Delete this quote">
-            🗑️ Delete
-          </button>
-        </div>
-      `;
-      
-      quotesListElement.appendChild(listItem);
-      console.log(`✅ Added quote item ${index + 1} to DOM`);
-      
-      // Add event listeners - but delay them slightly
-      setTimeout(() => {
-        // Main area click to load quote
-        const mainArea = document.getElementById(`quoteMain_${quote.id}`);
-        if (mainArea) {
-          mainArea.addEventListener('mouseenter', function() {
-            this.style.backgroundColor = '#f0f7ff';
-          });
-          
-          mainArea.addEventListener('mouseleave', function() {
-            this.style.backgroundColor = 'transparent';
-          });
-          
-          mainArea.addEventListener('click', function() {
-            console.log("Quote main area clicked:", quote.id);
-            loadQuoteFromList(quote.id);
-          });
-        }
-        
-        // Load button
-        const loadBtn = document.getElementById(`loadBtn_${quote.id}`);
-        if (loadBtn) {
-          loadBtn.addEventListener('mouseenter', function() {
-            this.style.backgroundColor = '#e3f2fd';
-          });
-          
-          loadBtn.addEventListener('mouseleave', function() {
-            this.style.backgroundColor = 'transparent';
-          });
-          
-          loadBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            console.log("Load button clicked:", quote.id);
-            loadQuoteFromList(quote.id);
-          });
-        }
-        
-        // Delete button
-        const deleteBtn = document.getElementById(`deleteBtn_${quote.id}`);
-        if (deleteBtn) {
-          deleteBtn.addEventListener('mouseenter', function() {
-            this.style.backgroundColor = '#ffeaea';
-          });
-          
-          deleteBtn.addEventListener('mouseleave', function() {
-            this.style.backgroundColor = 'transparent';
-          });
-          
-          deleteBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            console.log("Delete button clicked:", quote.id);
-            deleteQuoteFromSidebar(quote.id, quote.projectName);
-          });
-        }
-      }, 100); // Small delay to ensure DOM is ready
-    });
-    
-    console.log(`🎉 Successfully displayed ${quotes.length} quotes with enhanced features`);
-    
-    // Double-check after a moment
-    setTimeout(() => {
-      const finalCheck = document.getElementById("savedQuotesList");
-      if (finalCheck && finalCheck.children.length > 0) {
-        console.log("✅ FINAL CHECK: Quotes still visible after displayQuotesList completed");
-      } else {
-        console.log("❌ FINAL CHECK: Quotes disappeared after displayQuotesList!");
-        console.log("Final innerHTML:", finalCheck ? finalCheck.innerHTML : 'Element not found');
-      }
-    }, 500);
-    
-  } catch (error) {
-    console.error("❌ Error in displayQuotesList:", error);
-  }
-}
-
-// ------------- DELETE QUOTE FROM SIDEBAR ------------- 
-
-async function deleteQuoteFromSidebar(quoteId, projectName) {
-  try {
-    console.log("Attempting to delete quote:", quoteId, projectName);
-    
-    // Show confirmation dialog
-    const confirmed = confirm(`Are you sure you want to delete the quote "${projectName}"?\n\nThis action cannot be undone.`);
-    
-    if (!confirmed) {
-      console.log("Delete cancelled by user");
-      return;
-    }
-    
-    console.log("Delete confirmed, proceeding...");
-    
-    // Show loading notification
-    showNotification("Deleting quote...", "info");
-    
-    // Delete from Firestore
-    await db.collection("quotes").doc(quoteId).delete();
-    
-    console.log("Quote deleted successfully from database");
-    showNotification(`Quote "${projectName}" deleted successfully`, "success");
-    
-    // If this was the currently loaded quote, clear it
-    if (window.currentQuoteId === quoteId) {
-      console.log("Deleted quote was currently loaded, creating new quote");
-      newQuote();
-    }
-    
-    // Refresh the quotes list
-    loadQuotesList();
-    
-  } catch (error) {
-    console.error("Error deleting quote:", error);
-    showNotification("Error deleting quote: " + error.message, "error");
-  }
-}
-
-
-// ------------- ENHANCED LOAD QUOTE FROM LIST -------------
-async function loadQuoteFromList(quoteId) {
-  try {
-    console.log("Loading quote from list:", quoteId);
-    
-    // Show loading notification
-    showNotification("Loading quote...", "info");
-    
-    // Close the sidebar
-    const sidebar = document.getElementById("loadQuoteSidebar");
-    if (sidebar) {
-      sidebar.style.display = "none";
-    }
-    
-    // Load the quote
-    await loadQuote(quoteId);
-    
-  } catch (error) {
-    console.error("Error loading quote from list:", error);
-    showNotification("Error loading quote", "error");
-  }
-}
-
-// ------------- UPDATE STATUS FUNCTION (if needed) -------------
-
-async function updateQuoteStatus(quoteId, newStatus) {
-  try {
-    console.log("Updating quote status:", quoteId, "to", newStatus);
-    
-    await db.collection("quotes").doc(quoteId).update({
-      status: newStatus,
-      lastModified: firebase.firestore.FieldValue.serverTimestamp(),
-      lastModifiedBy: auth.currentUser.email
-    });
-    
-    showNotification("Quote status updated", "success");
-    
-    // Refresh the quotes list if sidebar is open
-    const sidebar = document.getElementById("loadQuoteSidebar");
-    if (sidebar && sidebar.style.display !== "none") {
-      loadQuotesList();
-    }
-    
-  } catch (error) {
-    console.error("Error updating quote status:", error);
-    showNotification("Error updating status", "error");
-  }
-}
-
-
-// ------------- LOAD QUOTE FUNCTION -------------
-async function loadQuote(quoteId) {
-  try {
-    console.log("Loading quote:", quoteId);
+    let quoteId = activeQuoteId;
+    let isNew = false;
     
     if (!quoteId) {
-      showNotification("Invalid quote ID", "error");
-      return;
+      const docRef = await db.collection("quotes").add(quoteData);
+      quoteId = docRef.id;
+      activeQuoteId = quoteId;
+      isNew = true;
+    } else {
+      await db.collection("quotes").doc(quoteId).set(quoteData, { merge: true });
     }
     
-    showNotification("Loading quote...", "info");
-    
-    const quoteDoc = await db.collection("quotes").doc(quoteId).get();
-    
-    if (!quoteDoc.exists) {
-      showNotification("Quote not found", "error");
-      return;
-    }
-    
-    const quoteData = quoteDoc.data();
-    console.log("Quote data loaded:", quoteData);
-    
-    // Set current quote ID for future updates
-    window.currentQuoteId = quoteId;
-    
-    // Load basic quote information
-    if (quoteData.projectName) {
-      const projectNameField = document.getElementById("projectNameNumber");
-      if (projectNameField) projectNameField.value = quoteData.projectName;
-    }
-    
-    if (quoteData.quoteNumber) {
-      const quoteNumberField = document.getElementById("quoteNumber");
-      if (quoteNumberField) quoteNumberField.value = quoteData.quoteNumber;
-    }
-    
-    if (quoteData.quoteDate) {
-      const quoteDateField = document.getElementById("quoteDate");
-      if (quoteDateField) quoteDateField.value = quoteData.quoteDate;
-    }
-    
-    if (quoteData.validUntil) {
-      const validUntilField = document.getElementById("validUntil");
-      if (validUntilField) validUntilField.value = quoteData.validUntil;
-    }
-    
-    // Load customer
-    if (quoteData.customerId) {
-      try {
-        await loadCustomerDropdown();
-        const customerDropdown = document.getElementById("customerAccountSelector");
-        if (customerDropdown) {
-          customerDropdown.value = quoteData.customerId;
-          window.selectedQuoteCustomer = quoteData.customerData;
-          if (typeof handleCustomerSelection === 'function') {
-            handleCustomerSelection();
-          }
-        }
-      } catch (customerError) {
-        console.warn("Could not load customer:", customerError);
-        if (quoteData.customerData) {
-          window.selectedQuoteCustomer = quoteData.customerData;
-        }
-      }
-    }
-    
-    // Load quote items and labor
-    if (quoteData.quoteItems) {
-      window.quoteItems = quoteData.quoteItems;
-      if (typeof refreshQuoteItemsTable === 'function') refreshQuoteItemsTable();
-    }
-    
-    if (quoteData.laborSections) {
-      window.laborSections = quoteData.laborSections;
-      if (typeof refreshLaborTable === 'function') refreshLaborTable();
-    }
-    
-    // Load SOW content
-    if (quoteData.sowContent && window.tinymceInstances && window.tinymceInstances.sowAiPromptText) {
-      window.tinymceInstances.sowAiPromptText.setContent(quoteData.sowContent);
-    }
-    
-    // Load task list
-    if (quoteData.taskList) {
-      window.taskList = quoteData.taskList;
-      if (typeof refreshTaskList === 'function') refreshTaskList();
-    }
-    
-    // Update totals
-    updateQuoteTotals();
-    
-    showNotification("Quote loaded successfully", "success");
-    
-    return quoteData;
-    
-  } catch (error) {
-    console.error("Error loading quote:", error);
-    showNotification("Error loading quote: " + error.message, "error");
+    await loadQuotesAndTemplates();
+    renderSidebar();
+    showNotification(isNew ? "Quote saved successfully!" : "Quote updated successfully!", "success");
+  } catch (e) {
+    showNotification("Failed to save quote: " + (e.message || e), "error");
+    console.error("Save quote error:", e);
   }
 }
-
-// ------------- CUSTOMER DROPDOWN LOADER -------------
-async function loadCustomerDropdown() {
-  try {
-    const snapshot = await db.collection("customerAccounts")
-      .orderBy("created", "desc")
-      .get();
-    
-    const dropdown = document.getElementById("customerAccountSelector");
-    if (!dropdown) return;
-    
-    dropdown.innerHTML = '<option value="">Select a customer account...</option>';
-    
-    snapshot.forEach(doc => {
-      const customer = { id: doc.id, ...doc.data() };
-      const option = document.createElement("option");
-      option.value = customer.id;
-      option.textContent = `${customer.firstName} ${customer.lastName}${customer.companyName ? ` (${customer.companyName})` : ''}`;
-      dropdown.appendChild(option);
-    });
-    
-  } catch (error) {
-    console.error("Error loading customer dropdown:", error);
-  }
-}
-
-// ------------- CLOSE SIDEBAR BUTTON -------------
-document.addEventListener('DOMContentLoaded', function() {
-  const closeBtn = document.getElementById("closeLoadQuoteSidebarBtn");
-  if (closeBtn) {
-    closeBtn.addEventListener('click', function() {
-      const sidebar = document.getElementById("loadQuoteSidebar");
-      if (sidebar) {
-        sidebar.style.display = "none";
-      }
-    });
-  }
-});
-
-
-// ------------- ADD THIS TO CONNECT YOUR LOAD QUOTE BUTTON -------------
-
-
-document.addEventListener('DOMContentLoaded', function() {
-  // Connect the Load Quote button
-  const loadQuoteBarBtn = document.getElementById("loadQuoteBarBtn");
-  if (loadQuoteBarBtn) {
-    loadQuoteBarBtn.addEventListener('click', function() {
-      console.log("Load Quote button clicked!");
-      loadQuotesList();
-    });
-  }
-  
-  // Connect the Save Quote button (both of them)
-  const saveQuoteBtn = document.getElementById("saveQuoteBtn");
-  if (saveQuoteBtn) {
-    saveQuoteBtn.addEventListener('click', function() {
-      console.log("Save Quote button clicked!");
-      saveQuote();
-    });
-  }
-  
-  const saveQuoteBarBtn = document.getElementById("saveQuoteBarBtn");
-  if (saveQuoteBarBtn) {
-    saveQuoteBarBtn.addEventListener('click', function() {
-      console.log("Save Quote bar button clicked!");
-      saveQuote();
-    });
-  }
-  
-  // Connect the New Quote button
-  const newQuoteBarBtn = document.getElementById("newQuoteBarBtn");
-  if (newQuoteBarBtn) {
-    newQuoteBarBtn.addEventListener('click', function() {
-      console.log("New Quote button clicked!");
-      newQuote();
-    });
-  }
-  
-  // Connect the close sidebar button
-  const closeBtn = document.getElementById("closeLoadQuoteSidebarBtn");
-  if (closeBtn) {
-    closeBtn.addEventListener('click', function() {
-      const sidebar = document.getElementById("loadQuoteSidebar");
-      if (sidebar) {
-        sidebar.style.display = "none";
-      }
-    });
-  }
-});
-
 document.getElementById("saveAsTemplateBarBtn").onclick = saveAsTemplatePrompt;
 async function saveAsTemplatePrompt() {
   const templateName = prompt("Enter a name for this template:");
@@ -1919,6 +1307,8 @@ async function saveAsTemplatePrompt() {
       lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     await db.collection("templates").add(templateData);
+    await loadQuotesAndTemplates();
+    renderSidebar();
     showNotification(`Template "${templateName}" saved successfully!`, "success");
   } catch (e) {
     showNotification("Failed to save template: " + (e.message || e), "error");
@@ -2946,10 +2336,8 @@ window.onload = function() {
     });
   }
 
-  // Initialize Google Maps autocomplete (don't await - let it load in background)
-  initAutocomplete().catch(error => {
-    console.log("Autocomplete initialization failed, continuing without it:", error);
-  });
+  // Initialize Google Maps autocomplete
+  initAutocomplete();
 };
 
 // --- Customer Account Modal Logic (matching new modal HTML & companyNameGroup logic) ---
@@ -3003,34 +2391,32 @@ function resetCustomerModal() {
   window.selectedProjectName = "";
 }
 
+// Always show login modal when Customers tab is clicked
+document.getElementById("tabCustomersBtn").onclick = function() {
+  document.getElementById("customersLoginEmail").value = "";
+  document.getElementById("customersLoginPassword").value = "";
+  document.getElementById("customersLoginError").style.display = "none";
+  document.getElementById("customersLoginModal").style.display = "block";
+};
 
+// On login success, show the customer modal
 document.getElementById("customersModalLoginBtn").onclick = async function() {
-  alert("Login handler START!");
   const email = document.getElementById("customersLoginEmail").value.trim();
   const password = document.getElementById("customersLoginPassword").value;
   try {
     await firebase.auth().signInWithEmailAndPassword(email, password);
-    alert("Login SUCCESS! Now hiding modal...");
-    const modal = document.getElementById("customersLoginModal");
-    modal.style.display = "none";
-    modal.style.visibility = "hidden";
-    modal.style.opacity = "0";
-    modal.removeAttribute("class");
-    modal.setAttribute("hidden", "true");
-    alert("Modal should be gone. Did it work?");
-    // ...rest of your code...
+    document.getElementById("customersLoginModal").style.display = "none";
+    resetCustomerModal();
+    document.getElementById("customerAccountModal").style.display = "block";
   } catch (e) {
-    alert("Login FAILED: " + e.message);
     document.getElementById("customersLoginError").textContent = e.message || "Login failed.";
     document.getElementById("customersLoginError").style.display = "block";
   }
 };
 
-// Hide customer account modal (this is separate from the login modal)
+// Hide modal
 function closeCustomerModal() {
-  const modal = document.getElementById("customerAccountModal");
-  modal.style.display = "none";
-  modal.className = ""; // Remove any centering classes if applied
+  document.getElementById("customerAccountModal").style.display = "none";
 }
 
 // --- Step 1: Search existing customers ---
@@ -3454,38 +2840,26 @@ document.getElementById("closeDeleteCustomerModalBtn").onclick = function() {
  };
 
 // --- Customers Tab: Always force login, then show customers table/info ---
+
+// Customers tab click: always show login modal
 document.getElementById("tabCustomersBtn").onclick = function() {
-  // Always show the login modal when Customers tab is clicked
   document.getElementById("customersLoginEmail").value = "";
   document.getElementById("customersLoginPassword").value = "";
   document.getElementById("customersLoginError").style.display = "none";
-  const modal = document.getElementById("customersLoginModal");
-  modal.style.display = "flex";
-  modal.style.visibility = "visible";
-  modal.style.opacity = "1";
-  modal.className = "modal-centered";
-  // Hide customers page until login
-  document.getElementById("customers-page").style.display = "none";
-  document.getElementById("tabCustomersBtn").classList.remove("active");
+  document.getElementById("customersLoginModal").style.display = "block";
 };
 
 // Cancel button on login modal
 document.getElementById("customersModalCancelBtn").onclick = function() {
-  const modal = document.getElementById("customersLoginModal");
-  modal.style.display = "none";
+  document.getElementById("customersLoginModal").style.display = "none";
 };
 
-// Login button in login modal
 document.getElementById("customersModalLoginBtn").onclick = async function() {
   const email = document.getElementById("customersLoginEmail").value.trim();
   const password = document.getElementById("customersLoginPassword").value;
   try {
     await firebase.auth().signInWithEmailAndPassword(email, password);
-    // Hide modal - this is the only code that should hide it!
-    const modal = document.getElementById("customersLoginModal");
-    modal.style.display = "none";
-    modal.className = ""; // Remove modal-centered class if present
-
+    document.getElementById("customersLoginModal").style.display = "none";
     // Show customers page and activate tab
     document.getElementById("customers-page").style.display = "";
     document.getElementById("tabCustomersBtn").classList.add("active");
