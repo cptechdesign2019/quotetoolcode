@@ -34,6 +34,104 @@ let templates = [];
 let savedQuotes = [];
 let activeQuoteId = null;
 let activeTemplateId = null;
+
+// Global variable to store the selected customer for the current quote
+window.selectedQuoteCustomer = null;
+
+// Load customers into the dropdown
+async function loadCustomerDropdown() {
+  const dropdown = document.getElementById("customerAccountSelector");
+  if (!dropdown) return;
+  
+  try {
+    dropdown.innerHTML = '<option value="">Loading customers...</option>';
+    
+    const snapshot = await db.collection("customerAccounts")
+      .orderBy("firstName")
+      .get();
+    
+    dropdown.innerHTML = '<option value="">-- Select Customer Account --</option>';
+    
+    if (snapshot.empty) {
+      dropdown.innerHTML += '<option value="" disabled>No customers found</option>';
+      return;
+    }
+    
+    snapshot.forEach(doc => {
+      const customer = doc.data();
+      const option = document.createElement("option");
+      option.value = doc.id;
+      
+      // Create display name based on customer type
+      let displayName = "";
+      if (customer.type === "commercial" && customer.companyName) {
+        displayName = `${customer.companyName} (${customer.firstName} ${customer.lastName})`;
+      } else {
+        displayName = `${customer.firstName} ${customer.lastName}`;
+      }
+      
+      option.textContent = displayName;
+      option.setAttribute('data-customer', JSON.stringify({
+        id: doc.id,
+        ...customer
+      }));
+      
+      dropdown.appendChild(option);
+    });
+    
+  } catch (error) {
+    console.error("Error loading customers:", error);
+    dropdown.innerHTML = '<option value="">Error loading customers</option>';
+  }
+}
+
+// Handle customer selection
+function handleCustomerSelection() {
+  const dropdown = document.getElementById("customerAccountSelector");
+  const selectedOption = dropdown.options[dropdown.selectedIndex];
+  
+  if (!selectedOption.value) {
+    // No customer selected
+    window.selectedQuoteCustomer = null;
+    document.getElementById("selectedCustomerInfo").style.display = "none";
+    return;
+  }
+  
+  try {
+    const customerData = JSON.parse(selectedOption.getAttribute('data-customer'));
+    window.selectedQuoteCustomer = customerData;
+    
+    // Update the display
+    updateSelectedCustomerDisplay(customerData);
+    
+    // Show the customer info section
+    document.getElementById("selectedCustomerInfo").style.display = "block";
+    
+  } catch (error) {
+    console.error("Error parsing customer data:", error);
+    window.selectedQuoteCustomer = null;
+    document.getElementById("selectedCustomerInfo").style.display = "none";
+  }
+}
+
+// Update the customer info display
+function updateSelectedCustomerDisplay(customer) {
+  document.getElementById("displayCustomerName").textContent = 
+    `${customer.firstName} ${customer.lastName}`;
+  
+  document.getElementById("displayCustomerEmail").textContent = 
+    customer.email || "Not provided";
+  
+  document.getElementById("displayCustomerPhone").textContent = 
+    customer.phone || "Not provided";
+  
+  document.getElementById("displayCustomerCompany").textContent = 
+    customer.companyName || "N/A";
+  
+  document.getElementById("displayCustomerAddress").textContent = 
+    customer.billingAddress || "Not provided";
+}
+
 const techList = [
   "Todd - Specialist",
   "Austin - Lead Tech",
@@ -159,6 +257,7 @@ document.getElementById("logoutButton").onclick = function() {
 async function loadInitialData() {
   await loadProducts();
   await loadQuotesAndTemplates();
+  await loadCustomerDropdown();
   renderLaborSections();
   renderSidebar();
   updateGrandTotals();
@@ -958,31 +1057,54 @@ document.getElementById("loadQuoteBarBtn").onclick = function() {
 document.getElementById("closeLoadQuoteSidebarBtn").onclick = function() {
   document.getElementById("loadQuoteSidebar").style.display = "none";
 };
+// Update the loadQuoteById function to restore customer selection
 async function loadQuoteById(id) {
   try {
     const doc = await db.collection("quotes").doc(id).get();
     if (!doc.exists) throw new Error("Quote not found");
+    
     const q = doc.data();
+    
     document.getElementById("projectNameNumber").value = q.projectNameNumber || "";
     document.getElementById("quoteStatusSelector").value = q.quoteStatus || "Draft";
     document.getElementById("discountPercent").value = q.discountPercent || 0;
     document.getElementById("shippingPercent").value = q.shippingPercent || 0;
     document.getElementById("salesTaxPercent").value = q.salesTaxPercent || 0;
     document.getElementById("sowFullOutputText").value = q.sowText || "";
+    
+    // Restore customer selection
+    if (q.customerId && q.customerInfo) {
+      document.getElementById("customerAccountSelector").value = q.customerId;
+      window.selectedQuoteCustomer = {
+        id: q.customerId,
+        ...q.customerInfo
+      };
+      updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
+      document.getElementById("selectedCustomerInfo").style.display = "block";
+    } else {
+      document.getElementById("customerAccountSelector").value = "";
+      window.selectedQuoteCustomer = null;
+      document.getElementById("selectedCustomerInfo").style.display = "none";
+    }
+    
     window.quoteItems = Array.isArray(q.quoteItems) ? q.quoteItems : [];
     window.laborSections = Array.isArray(q.laborSections) ? q.laborSections : [];
+    
     activeQuoteId = id;
     activeTemplateId = null;
+    
     renderQuoteTable();
     renderLaborSections();
     updateQuoteSummary();
     updateGrandTotals();
+    
     document.getElementById("loadQuoteSidebar").style.display = "none";
     showNotification("Quote loaded.", "success");
   } catch (e) {
     showNotification("Failed to load quote.", "error");
   }
 }
+
 async function loadTemplateById(id) {
   try {
     const doc = await db.collection("templates").doc(id).get();
@@ -1010,6 +1132,7 @@ async function loadTemplateById(id) {
 }
 document.getElementById("saveQuoteBtn").onclick = saveQuote;
 document.getElementById("saveQuoteBarBtn").onclick = saveQuote;
+// Update the saveQuote function to include customer information
 async function saveQuote() {
   try {
     const projectNameNumber = document.getElementById("projectNameNumber").value.trim();
@@ -1018,6 +1141,7 @@ async function saveQuote() {
     const shippingPercent = parseFloat(document.getElementById("shippingPercent").value) || 0;
     const salesTaxPercent = parseFloat(document.getElementById("salesTaxPercent").value) || 0;
     const sowText = document.getElementById("sowFullOutputText").value;
+    
     const quoteData = {
       projectNameNumber,
       quoteStatus,
@@ -1027,11 +1151,24 @@ async function saveQuote() {
       sowText,
       quoteItems: JSON.parse(JSON.stringify(window.quoteItems)),
       laborSections: JSON.parse(JSON.stringify(window.laborSections)),
+      // Add customer information
+      customerId: window.selectedQuoteCustomer ? window.selectedQuoteCustomer.id : null,
+      customerInfo: window.selectedQuoteCustomer ? {
+        firstName: window.selectedQuoteCustomer.firstName,
+        lastName: window.selectedQuoteCustomer.lastName,
+        companyName: window.selectedQuoteCustomer.companyName,
+        email: window.selectedQuoteCustomer.email,
+        phone: window.selectedQuoteCustomer.phone,
+        billingAddress: window.selectedQuoteCustomer.billingAddress,
+        type: window.selectedQuoteCustomer.type
+      } : null,
       lastEditedBy: currentUser ? currentUser.email : 'unknown',
       lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
+    
     let quoteId = activeQuoteId;
     let isNew = false;
+    
     if (!quoteId) {
       const docRef = await db.collection("quotes").add(quoteData);
       quoteId = docRef.id;
@@ -1040,6 +1177,7 @@ async function saveQuote() {
     } else {
       await db.collection("quotes").doc(quoteId).set(quoteData, { merge: true });
     }
+    
     await loadQuotesAndTemplates();
     renderSidebar();
     showNotification(isNew ? "Quote saved successfully!" : "Quote updated successfully!", "success");
@@ -1168,73 +1306,71 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
     
     let yPosition = 25;
     
-    // Header Section Box
-    doc.setFillColor(240, 245, 250); // Very light blue background
-    doc.rect(15, 15, 180, 55, 'F');
-    doc.setDrawColor(22, 41, 68); // #162944
-    doc.setLineWidth(0.5);
-    doc.rect(15, 15, 180, 55, 'S');
-    
-    // Company Logo
-    try {
-      const logoImg = await loadImageAsBase64('cpheaderlogo.png');
-      doc.addImage(logoImg, 'PNG', 20, 20, 35, 18);
-    } catch (e) {
-      console.log("Logo loading failed, continuing without logo");
-    }
-    
-    // Project Name (prominent)
+    // Company Name - Centered at top
     doc.setTextColor(22, 41, 68); // #162944
-    doc.setFontSize(16);
+    doc.setFontSize(24);
     doc.setFont("times", "bold");
-    doc.text("PROJECT:", 20, 45);
-    doc.setFont("times", "normal");
-    doc.text(projectName, 50, 45);
+    const companyName = "CLEARPOINT TECHNOLOGY + DESIGN";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const textWidth = doc.getTextWidth(companyName);
+    const centerX = (pageWidth - textWidth) / 2;
+    doc.text(companyName, centerX, yPosition);
     
-    // Company Information (smaller, right side)
+    yPosition += 25; // More space after company name
+    
+    // Company Information (right side) - More space from top
     doc.setFontSize(9);
-    doc.setFont("times", "bold");
-    doc.text("Clearpoint Technology + Design", 125, 25);
     doc.setFont("times", "normal");
-    doc.setFontSize(8);
-    doc.text("285 Old County Line Road, STE B", 125, 30);
-    doc.text("Westerville, OH 43081", 125, 34);
-    doc.text("740-936-7767", 125, 38);
+    doc.text("285 Old County Line Road, STE B", 140, yPosition);
+    doc.text("Westerville, OH 43081", 140, yPosition + 5);
+    doc.text("740-936-7767", 140, yPosition + 10);
     
-    // Customer Information (if available)
-    if (window.activeCustomerForQuote) {
-      const customer = window.activeCustomerForQuote;
+    // Customer Information (if available) - left side at same level as company info
+    if (window.selectedQuoteCustomer) {
+      const customer = window.selectedQuoteCustomer;
       doc.setFontSize(10);
       doc.setFont("times", "bold");
-      doc.text("CLIENT:", 125, 48);
+      doc.text("CLIENT:", 20, yPosition);
       doc.setFont("times", "normal");
       doc.setFontSize(9);
       const customerName = customer.type === "commercial" && customer.companyName 
         ? `${customer.companyName}`
         : `${customer.firstName} ${customer.lastName}`;
-      doc.text(customerName, 125, 53);
+      doc.text(customerName, 20, yPosition + 7);
       
       if (customer.type === "commercial" && customer.companyName) {
-        doc.text(`${customer.firstName} ${customer.lastName}`, 125, 57);
+        doc.text(`${customer.firstName} ${customer.lastName}`, 20, yPosition + 13);
       }
       
-      if (customer.email && yPosition < 65) {
-        doc.text(customer.email, 125, 61);
+      if (customer.email) {
+        doc.text(customer.email, 20, yPosition + 19);
       }
-      if (customer.phone && yPosition < 65) {
-        doc.text(customer.phone, 125, 65);
+      if (customer.phone) {
+        doc.text(customer.phone, 20, yPosition + 25);
       }
+      yPosition += 40;
+    } else {
+      yPosition += 25;
     }
     
-    yPosition = 85;
+    yPosition += 20; // Space before project name
+    
+    // Project Name (moved down to just above EQUIPMENT section)
+    doc.setFontSize(12);
+    doc.setFont("times", "bold");
+    doc.text("PROJECT:", 20, yPosition);
+    doc.setFont("times", "normal");
+    doc.text(projectName, 60, yPosition);
+    
+    yPosition += 15; // Small space before EQUIPMENT
     
     // Equipment Table
     if (window.quoteItems && window.quoteItems.length > 0) {
       doc.setTextColor(22, 41, 68);
       doc.setFont("times", "bold");
-      doc.setFontSize(14);
+      doc.setFontSize(16);
       doc.text("EQUIPMENT", 20, yPosition);
-      yPosition += 8;
+      yPosition += 10;
       
       // Prepare table data with images
       const equipmentTableData = [];
@@ -1250,11 +1386,60 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
         
         let imageData = null;
         try {
-          if (item.imageURL || item.imageUrl) {
-            imageData = await loadImageAsBase64(item.imageURL || item.imageUrl);
+          const imageUrl = item.imageURL || item.imageUrl;
+          if (imageUrl && imageUrl.trim() && imageUrl !== 'placeholderlogoimage.png') {
+            // Create a proper image load promise
+            imageData = await new Promise((resolve, reject) => {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = function() {
+                try {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  canvas.width = 60; // Fixed width for consistency
+                  canvas.height = 60; // Fixed height for consistency
+                  
+                  // Calculate aspect ratio and draw centered
+                  const aspectRatio = img.width / img.height;
+                  let drawWidth = 60;
+                  let drawHeight = 60;
+                  let offsetX = 0;
+                  let offsetY = 0;
+                  
+                  if (aspectRatio > 1) {
+                    drawHeight = 60 / aspectRatio;
+                    offsetY = (60 - drawHeight) / 2;
+                  } else {
+                    drawWidth = 60 * aspectRatio;
+                    offsetX = (60 - drawWidth) / 2;
+                  }
+                  
+                  // Fill with white background
+                  ctx.fillStyle = 'white';
+                  ctx.fillRect(0, 0, 60, 60);
+                  
+                  // Draw image
+                  ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                  
+                  const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                  resolve(dataURL);
+                } catch (e) {
+                  resolve(null);
+                }
+              };
+              img.onerror = () => resolve(null);
+              
+              // Handle different URL formats
+              if (imageUrl.startsWith('http')) {
+                img.src = imageUrl;
+              } else {
+                img.src = `./${imageUrl}`;
+              }
+            });
           }
         } catch (e) {
-          console.log(`Failed to load image for item ${i}`);
+          console.log(`Failed to load image for item ${i}:`, e);
+          imageData = null;
         }
         
         equipmentTableData.push({
@@ -1284,23 +1469,25 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
           fontSize: 9,
           font: 'times',
           textColor: [22, 41, 68],
-          halign: 'left',
-          valign: 'middle'
+          halign: 'center', // Center all text in equipment table
+          valign: 'middle',
+          cellPadding: 3
         },
         headStyles: { 
           fillColor: [22, 41, 68],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          halign: 'center',
-          valign: 'middle'
+          halign: 'center', // Center all headers in equipment table
+          valign: 'middle',
+          fontSize: 10
         },
         columnStyles: {
-          0: { cellWidth: 20, halign: 'center' }, // Image column
-          1: { cellWidth: 35 }, // Product name
-          2: { cellWidth: 45 }, // Description
+          0: { cellWidth: 22, halign: 'center' }, // Image column
+          1: { cellWidth: 40, halign: 'center' }, // Product name - centered
+          2: { cellWidth: 45, halign: 'center' }, // Description - centered
           3: { cellWidth: 15, halign: 'center', valign: 'middle' }, // Qty
-          4: { cellWidth: 25, halign: 'center', valign: 'middle' }, // Price
-          5: { cellWidth: 25, halign: 'center', valign: 'middle' }  // Total
+          4: { cellWidth: 25, halign: 'center', valign: 'middle' }, // Price - centered
+          5: { cellWidth: 25, halign: 'center', valign: 'middle' }  // Total - centered
         },
         didDrawCell: function (data) {
           // Add images to the first column
@@ -1308,10 +1495,10 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
             const item = equipmentTableData[data.row.index];
             if (item && item.image) {
               try {
-                const cellX = data.cell.x + 2;
-                const cellY = data.cell.y + 2;
-                const imgSize = Math.min(data.cell.height - 4, 16);
-                doc.addImage(item.image, 'PNG', cellX, cellY, imgSize, imgSize);
+                const cellX = data.cell.x + 1;
+                const cellY = data.cell.y + 1;
+                const imgSize = Math.min(data.cell.height - 2, 20);
+                doc.addImage(item.image, 'JPEG', cellX, cellY, imgSize, imgSize);
               } catch (e) {
                 console.log('Error adding image to PDF:', e);
               }
@@ -1320,23 +1507,24 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
         }
       });
       
-      // Equipment total
-      const finalY = doc.lastAutoTable.finalY + 5;
+      // Equipment total - formatted like labor total
+      const equipmentTableRightEdge = 190; // Same as labor table
+      const finalY = doc.lastAutoTable.finalY + 8;
       doc.setFont("times", "bold");
-      doc.setFontSize(10);
-      doc.text("Equipment Total:", 140, finalY);
-      doc.text(`$${equipmentTotal.toFixed(2)}`, 170, finalY);
+      doc.setFontSize(11);
+      doc.text("Equipment Total:", equipmentTableRightEdge - 50, finalY);
+      doc.text(`$${equipmentTotal.toFixed(2)}`, equipmentTableRightEdge - 5, finalY, { align: 'right' });
       
-      yPosition = finalY + 15;
+      yPosition = finalY + 20;
     }
     
     // Labor Section
     if (laborSections && laborSections.some(section => section.clientCost > 0)) {
       doc.setTextColor(22, 41, 68);
       doc.setFont("times", "bold");
-      doc.setFontSize(14);
+      doc.setFontSize(16);
       doc.text("LABOR", 20, yPosition);
-      yPosition += 8;
+      yPosition += 10;
       
       const laborTableData = [];
       
@@ -1352,40 +1540,52 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
         startY: yPosition,
         margin: { left: 20, right: 20 },
         styles: { 
-          fontSize: 9,
+          fontSize: 10,
           font: 'times',
           textColor: [22, 41, 68],
-          valign: 'middle'
+          valign: 'middle',
+          cellPadding: 4
         },
         headStyles: { 
           fillColor: [22, 41, 68],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          halign: 'center',
-          valign: 'middle'
+          valign: 'middle',
+          fontSize: 11
         },
         columnStyles: {
-          0: { cellWidth: 120 },
-          1: { cellWidth: 40, halign: 'center', valign: 'middle' }
+          0: { cellWidth: 130, halign: 'left' }, // Service column - left aligned
+          1: { cellWidth: 40, halign: 'center', valign: 'middle' } // Cost column - centered both horizontally and vertically
         }
       });
       
-      // Labor total
-      const finalY = doc.lastAutoTable.finalY + 5;
+      // Labor total - aligned with right edge of labor table (190 = 20 margin + 170 table width)
+      const laborTableRightEdge = 190;
+      const finalY = doc.lastAutoTable.finalY + 8;
       doc.setFont("times", "bold");
-      doc.setFontSize(10);
-      doc.text("Labor Total:", 140, finalY);
-      doc.text(`$${laborTotal.toFixed(2)}`, 170, finalY);
+      doc.setFontSize(11);
+      doc.text("Labor Total:", laborTableRightEdge - 50, finalY);
+      doc.text(`$${laborTotal.toFixed(2)}`, laborTableRightEdge - 5, finalY, { align: 'right' });
       
-      yPosition = finalY + 15;
+      yPosition = finalY + 20;
+    }
+    
+    // Check if we need a new page for quote summary
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const remainingSpace = pageHeight - yPosition;
+    const summaryHeight = 80; // Estimated height needed for summary section
+    
+    if (remainingSpace < summaryHeight) {
+      doc.addPage();
+      yPosition = 25;
     }
     
     // Grand Totals Section
     doc.setTextColor(22, 41, 68);
     doc.setFont("times", "bold");
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.text("QUOTE SUMMARY", 20, yPosition);
-    yPosition += 8;
+    yPosition += 10;
     
     const totalsData = [];
     totalsData.push(['Equipment Subtotal', `$${equipmentTotal.toFixed(2)}`]);
@@ -1414,31 +1614,47 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
         fontSize: 10,
         font: 'times',
         textColor: [22, 41, 68],
-        valign: 'middle'
+        valign: 'middle',
+        cellPadding: 3
       },
       columnStyles: {
-        0: { cellWidth: 120, fontStyle: 'bold' },
-        1: { cellWidth: 40, halign: 'center', valign: 'middle', fontStyle: 'bold' }
+        0: { cellWidth: 130, fontStyle: 'bold' },
+        1: { cellWidth: 40, halign: 'right', valign: 'middle', fontStyle: 'bold' }
       }
     });
     
     // Final Total (prominent)
-    const finalY = doc.lastAutoTable.finalY + 8;
+    const finalY = doc.lastAutoTable.finalY + 12;
     doc.setFillColor(22, 41, 68);
-    doc.rect(20, finalY - 5, 160, 12, 'F');
+    doc.rect(20, finalY - 8, 170, 16, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont("times", "bold");
-    doc.setFontSize(12);
-    doc.text("TOTAL QUOTE AMOUNT:", 25, finalY + 2);
-    doc.text(`$${finalTotal.toFixed(2)}`, 150, finalY + 2);
+    doc.setFontSize(14);
+    doc.text("TOTAL QUOTE AMOUNT:", 25, finalY);
+    doc.text(`$${finalTotal.toFixed(2)}`, 185, finalY, { align: 'right' });
     
-    yPosition = finalY + 25;
+    yPosition = finalY + 30;
     
     // Validity Notice
     doc.setTextColor(22, 41, 68);
     doc.setFontSize(9);
     doc.setFont("times", "italic");
     doc.text("This quote is valid for 30 days unless specified in writing otherwise.", 20, yPosition);
+    
+    yPosition += 20;
+    
+    // Customer Signature and Date Lines
+    doc.setTextColor(22, 41, 68);
+    doc.setFontSize(10);
+    doc.setFont("times", "normal");
+    
+    // Signature line
+    doc.text("Customer Signature:", 20, yPosition);
+    doc.line(65, yPosition, 130, yPosition); // Draw signature line
+    
+    // Date line
+    doc.text("Date:", 140, yPosition);
+    doc.line(155, yPosition, 190, yPosition); // Draw date line
     
     // Save the PDF
     doc.save(filename);
@@ -1448,29 +1664,6 @@ document.getElementById("downloadPdfBtn").onclick = async function() {
     alert("Error generating PDF. Please try again.");
   }
 };
-
-// Updated helper function to load image as base64
-function loadImageAsBase64(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function() {
-      try {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        const dataURL = canvas.toDataURL('image/png');
-        resolve(dataURL);
-      } catch (e) {
-        reject(e);
-      }
-    };
-    img.onerror = reject;
-    img.src = src;
-  });
-}
 
 // Helper function to load image as base64
 function loadImageAsBase64(src) {
@@ -2017,6 +2210,7 @@ document.getElementById("importProductsCsvInput").addEventListener("change", fun
   e.target.value = "";
 });
 
+
 // ------------- INIT ON LOAD -------------
 window.onload = function() {
   updateFooterYear();
@@ -2027,7 +2221,13 @@ window.onload = function() {
   setupMicButton("taskListMicBtn", "taskListAiPromptText", "generateTaskListBtn");
   setupGenerateButtonState("sowAiPromptText", "draftFullSowWithAiBtn");
   setupGenerateButtonState("taskListAiPromptText", "generateTaskListBtn");
- };
+  
+  // Add event listeners for customer dropdown
+  document.getElementById("customerAccountSelector").addEventListener("change", handleCustomerSelection);
+  document.getElementById("refreshCustomersBtn").addEventListener("click", () => {
+    loadCustomerDropdown();
+  });
+};
 
 // --- Customer Account Modal Logic (matching new modal HTML & companyNameGroup logic) ---
 
