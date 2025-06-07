@@ -174,10 +174,7 @@ firebase.auth().onAuthStateChanged(user => {
 let products = [];
 let filteredProducts = [];
 let selectedProduct = null;
-let templates = [];
-let savedQuotes = [];
-let activeQuoteId = null;
-let activeTemplateId = null;
+
 
 // Global variable to store the selected customer for the current quote
 window.selectedQuoteCustomer = null;
@@ -382,10 +379,8 @@ document.getElementById("logoutButton").onclick = function() {
 // ------------- INITIAL DATA LOAD -------------
 async function loadInitialData() {
   await loadProducts();
-  await loadQuotesAndTemplates();
   await loadCustomerDropdown();
   renderLaborSections();
-  renderSidebar();
   updateGrandTotals();
   initTinyMCE();
   renderTaskListTable();
@@ -1076,136 +1071,13 @@ function updateGrandTotals() {
   document.getElementById(id).onchange = updateGrandTotals;
 });
 
-// ------------- QUOTES & TEMPLATES LOAD/SIDEBAR -------------
-async function loadQuotesAndTemplates() {
-  const quotesSnap = await db.collection("quotes").orderBy("lastEditedAt", "desc").get();
-  savedQuotes = quotesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  const templatesSnap = await db.collection("templates").orderBy("lastEditedAt", "desc").get();
-  templates = templatesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-function renderSidebar() {
-  const savedQuotesList = document.getElementById("savedQuotesList");
-  savedQuotesList.innerHTML = "";
-  savedQuotes.forEach(q => {
-    const li = document.createElement("li");
-    const row = document.createElement("div");
-    row.className = "quote-sidebar-row";
-    const mainBtn = document.createElement("button");
-    mainBtn.textContent = q.projectNameNumber || "(No Project Name)";
-    mainBtn.className = "sidebar-load-btn";
-    mainBtn.style.background = "none";
-    mainBtn.style.border = "none";
-    mainBtn.style.padding = "0";
-    mainBtn.style.color = "#003366";
-    mainBtn.style.fontWeight = "600";
-    mainBtn.style.fontSize = "1.04em";
-    mainBtn.style.cursor = "pointer";
-    mainBtn.onclick = () => loadQuoteById(q.id);
-    row.appendChild(mainBtn);
-    const delBtn = document.createElement("button");
-    delBtn.className = "sidebar-delete-btn";
-    delBtn.title = "Delete";
-    delBtn.innerHTML = "&#10005;";
-    delBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (confirm("Delete this saved quote? This can't be undone.")) {
-        db.collection("quotes").doc(q.id).delete().then(() => {
-          savedQuotes = savedQuotes.filter(qq => qq.id !== q.id);
-          renderSidebar();
-          showNotification("Quote deleted.", "success");
-        }).catch(err => {
-          showNotification("Failed to delete quote.", "error");
-        });
-      }
-    };
-    row.appendChild(delBtn);
-    li.appendChild(row);
-    const meta = document.createElement("div");
-    meta.className = "quote-sidebar-meta";
-    let status = q.quoteStatus || "Draft";
-    let who = q.lastEditedBy || "";
-    let when = q.lastEditedAt && q.lastEditedAt.toDate ? q.lastEditedAt.toDate() : null;
-    let whenStr = when ? when.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-    meta.innerHTML = `<div>Status: <b>${status}</b></div><div>Last edited by: <b>${who}</b></div>${whenStr ? `<div>${whenStr}</div>` : ""}`;
-    li.appendChild(meta);
-    savedQuotesList.appendChild(li);
-  });
-  const templateList = document.getElementById("templateList");
-  templateList.innerHTML = "";
-  templates.forEach(t => {
-    const li = document.createElement("li");
-    const row = document.createElement("div");
-    row.className = "quote-sidebar-row";
-    const mainBtn = document.createElement("button");
-    mainBtn.textContent = t.templateName || "(No Template Name)";
-    mainBtn.className = "sidebar-load-btn";
-    mainBtn.style.background = "none";
-    mainBtn.style.border = "none";
-    mainBtn.style.padding = "0";
-    mainBtn.style.color = "#003366";
-    mainBtn.style.fontWeight = "600";
-    mainBtn.style.fontSize = "1.04em";
-    mainBtn.style.cursor = "pointer";
-    mainBtn.onclick = () => loadTemplateById(t.id);
-    row.appendChild(mainBtn);
-    const delBtn = document.createElement("button");
-    delBtn.className = "sidebar-delete-btn";
-    delBtn.title = "Delete";
-    delBtn.innerHTML = "&#10005;";
-    delBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (confirm("Delete this template? This can't be undone.")) {
-        db.collection("templates").doc(t.id).delete().then(() => {
-          templates = templates.filter(tt => tt.id !== t.id);
-          renderSidebar();
-          showNotification("Template deleted.", "success");
-        }).catch(err => {
-          showNotification("Failed to delete template.", "error");
-        });
-      }
-    };
-    row.appendChild(delBtn);
-    li.appendChild(row);
-    const meta = document.createElement("div");
-    meta.className = "quote-sidebar-meta";
-    let who = t.lastEditedBy || "";
-    let when = t.lastEditedAt && t.lastEditedAt.toDate ? t.lastEditedAt.toDate() : null;
-    let whenStr = when ? when.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-    meta.innerHTML = `<div>Last edited by: <b>${who}</b></div>${whenStr ? `<div>${whenStr}</div>` : ""}`;
-    li.appendChild(meta);
-    templateList.appendChild(li);
-  });
-}
-document.getElementById("loadQuoteBarBtn").onclick = function() {
-  loadQuotesAndTemplates().then(renderSidebar);
-  document.getElementById("loadQuoteSidebar").style.display = "block";
-};
+
+
+
 document.getElementById("closeLoadQuoteSidebarBtn").onclick = function() {
   document.getElementById("loadQuoteSidebar").style.display = "none";
 };
-// Update the loadQuoteById function to restore customer selection
-async function loadQuoteById(id) {
-  try {
-    const doc = await db.collection("quotes").doc(id).get();
-    if (!doc.exists) throw new Error("Quote not found");
-    
-    const q = doc.data();
-    
-    document.getElementById("projectNameNumber").value = q.projectNameNumber || "";
-    document.getElementById("quoteStatusSelector").value = q.quoteStatus || "Draft";
-    document.getElementById("discountPercent").value = q.discountPercent || 0;
-    document.getElementById("shippingPercent").value = q.shippingPercent || 0;
-    document.getElementById("salesTaxPercent").value = q.salesTaxPercent || 0;
-    document.getElementById("sowFullOutputText").value = q.sowText || "";
-    
-    // Restore customer selection
-    if (q.customerId && q.customerInfo) {
-      document.getElementById("customerAccountSelector").value = q.customerId;
-      // **Set the selected customer with the new data and ID**
-window.selectedQuoteCustomer = {
-  id: docRef.id,
-  ...customerData
-};
+
 
 // Update the customer selector dropdown
 await loadCustomerDropdown();
@@ -1237,37 +1109,9 @@ updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
   }
 }
 
-async function loadTemplateById(id) {
-  try {
-    const doc = await db.collection("templates").doc(id).get();
-    if (!doc.exists) throw new Error("Template not found");
-    const t = doc.data();
-    document.getElementById("projectNameNumber").value = t.templateName || "";
-    document.getElementById("quoteStatusSelector").value = "Draft";
-    document.getElementById("discountPercent").value = t.discountPercent || 0;
-    document.getElementById("shippingPercent").value = t.shippingPercent || 0;
-    document.getElementById("salesTaxPercent").value = t.salesTaxPercent || 0;
-    document.getElementById("sowFullOutputText").value = t.sowText || "";
-    window.quoteItems = Array.isArray(t.quoteItems) ? t.quoteItems : [];
-    window.laborSections = Array.isArray(t.laborSections) ? t.laborSections : [];
-    activeQuoteId = null;
-    activeTemplateId = id;
-    renderQuoteTable();
-    renderLaborSections();
-    updateQuoteSummary();
-    updateGrandTotals();
-    document.getElementById("loadQuoteSidebar").style.display = "none";
-    showNotification("Template loaded.", "success");
-  } catch (e) {
-    showNotification("Failed to load template.", "error");
-  }
-}
+
 document.getElementById("saveQuoteBtn").onclick = saveQuote;
 document.getElementById("saveQuoteBarBtn").onclick = saveQuote;
-// Update the saveQuote function to include customer information
-
-
-
 
 
 // ------------- CLEAN QUOTE SAVE/LOAD SYSTEM -------------
@@ -2099,10 +1943,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-
-
-
-
 document.getElementById("saveAsTemplateBarBtn").onclick = saveAsTemplatePrompt;
 async function saveAsTemplatePrompt() {
   const templateName = prompt("Enter a name for this template:");
@@ -2124,8 +1964,6 @@ async function saveAsTemplatePrompt() {
       lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     await db.collection("templates").add(templateData);
-    await loadQuotesAndTemplates();
-    renderSidebar();
     showNotification(`Template "${templateName}" saved successfully!`, "success");
   } catch (e) {
     showNotification("Failed to save template: " + (e.message || e), "error");
