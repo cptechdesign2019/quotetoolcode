@@ -2378,38 +2378,86 @@ function showCustomerForm() {
 // --- Step 2: Save new customer form ---
 document.getElementById("addCustomerForm").onsubmit = async function(e) {
   e.preventDefault();
-  // Gather info
-  const firstName = document.getElementById("customerFirstName").value.trim();
-  const lastName = document.getElementById("customerLastName").value.trim();
-  const companyName = document.getElementById("customerCompanyName").value.trim();
-  const email = document.getElementById("customerEmail").value.trim();
-  const phone = document.getElementById("customerPhone").value.trim();
-  const billingAddress = document.getElementById("customerBillingAddress").value.trim();
-  const projectAddress = document.getElementById("customerProjectAddress").value.trim();
-  const type = window.newCustomerType;
+  
+  try {
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Saving...";
+    submitBtn.disabled = true;
+    
+    // Gather customer info
+    const firstName = document.getElementById("customerFirstName").value.trim();
+    const lastName = document.getElementById("customerLastName").value.trim();
+    const companyName = document.getElementById("customerCompanyName").value.trim();
+    const email = document.getElementById("customerEmail").value.trim();
+    const phone = document.getElementById("customerPhone").value.trim();
+    const billingAddress = document.getElementById("customerBillingAddress").value.trim();
+    const type = window.newCustomerType;
 
-  // Keywords for search (for future improvements)
-  let keywords = [
-    firstName.toLowerCase(),
-    lastName.toLowerCase(),
-    ...(companyName ? [companyName.toLowerCase()] : [])
-  ];
+    // Validation
+    if (!firstName || !lastName || !email || !phone) {
+      throw new Error("Please fill in all required fields");
+    }
 
-  // Save to Firestore
-  const docRef = await db.collection("customerAccounts").add({
-    firstName, lastName, companyName, email, phone, billingAddress, addresses: [projectAddress],
-    type,
-    created: firebase.firestore.FieldValue.serverTimestamp(),
-    searchKeywords: keywords
-  });
-  // Set as selected customer for this quote
-  window.selectedCustomerAccount = {
-    id: docRef.id, firstName, lastName, companyName, email, phone, billingAddress, addresses: [projectAddress], type
-  };
-  // Move to project name step
-  document.getElementById("addCustomerForm").style.display = "none";
-  document.getElementById("customerStep3").style.display = "";
-  document.getElementById("projectNameInput").focus();
+    if (type === "commercial" && !companyName) {
+      throw new Error("Company name is required for commercial customers");
+    }
+
+    // Keywords for search functionality
+    let keywords = [
+      firstName.toLowerCase(),
+      lastName.toLowerCase(),
+      email.toLowerCase(),
+      ...(companyName ? [companyName.toLowerCase()] : [])
+    ];
+
+    // Customer data object
+    const customerData = {
+      firstName,
+      lastName,
+      companyName: companyName || "",
+      email,
+      phone,
+      billingAddress: billingAddress || "",
+      type,
+      created: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: currentUser ? currentUser.email : 'unknown',
+      searchKeywords: keywords
+    };
+
+    // Save to Firestore
+    const docRef = await db.collection("customerAccounts").add(customerData);
+    
+    // Set as selected customer for this quote
+    window.selectedCustomerAccount = {
+      id: docRef.id,
+      ...customerData
+    };
+    
+    // Show success message
+    if (typeof showNotification === 'function') {
+      showNotification("Customer account saved successfully!", "success");
+    }
+    
+    // Move to project name step
+    document.getElementById("addCustomerForm").style.display = "none";
+    document.getElementById("customerStep3").style.display = "";
+    document.getElementById("projectNameInput").focus();
+    
+    // Reset button
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+    
+  } catch (error) {
+    console.error("Error saving customer:", error);
+    alert("Error saving customer: " + error.message);
+    
+    // Reset button
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.textContent = "Save Customer Account";
+    submitBtn.disabled = false;
+  }
 };
 
 // --- Step 3: Enter project name and create quote ---
@@ -2472,11 +2520,6 @@ document.getElementById("createQuoteBtn").onclick = function() {
     alert("Error creating quote: " + error.message);
   }
 };
-
-// When modal is closed, optional: reset
-document.getElementById("customerAccountModal").addEventListener("click", function(e) {
-  if (e.target === this) closeCustomerModal();
-});
 
 // ----------- LOAD AND RENDER CUSTOMERS TABLE -----------
 
