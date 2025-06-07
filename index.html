@@ -87,24 +87,49 @@
         <div class="main-tab-page" id="tabQuoteBuilderPage" style="">
             <main style="max-width: 1500px; background:#fff; margin:38px auto 30px auto; border-radius:14px; box-shadow:0 8px 36px rgba(0,89,179,0.08); padding:36px 36px 26px 36px;">
                 <!-- Project Info -->
-                <section id="project-info" style="margin-bottom:30px;">
-                    <h2 style="margin-top:0;">Project Information</h2>
-                    <div class="form-group" style="display:flex; gap:18px; align-items:center;">
-                        <label for="projectNameNumber" style="min-width:160px;">Project Name & Number:</label>
-                        <input type="text" id="projectNameNumber" name="projectNameNumber" placeholder="e.g., Conference Room Upgrade - PJ1001" class="project-input-short" style="flex:1;">
-                    </div>
-                    <div class="form-group" style="display:flex; gap:18px; align-items:center;">
-                        <label for="quoteStatusSelector" style="min-width:160px;">Quote Status:</label>
-                        <select id="quoteStatusSelector" style="height:40px;">
-                            <option value="Draft">Draft</option>
-                            <option value="SentToClient">Sent to Client</option>
-                            <option value="Accepted">Accepted</option>
-                            <option value="ChangesRequested">Changes Requested</option>
-                            <option value="Archived">Archived</option>
-                        </select>
-                        <button id="updateStatusBtn" style="background: #0059b3; color: #fff; border-radius: 6px; border: none; padding: 9px 18px; font-weight: 600; margin-left:24px;">Update Status</button>
-                    </div>
-                </section>
+<section id="project-info" style="margin-bottom:30px;">
+    <h2 style="margin-top:0;">Project Information</h2>
+    
+    <!-- Customer Selection Dropdown -->
+    <div class="form-group" style="display:flex; gap:18px; align-items:center; margin-bottom:16px;">
+        <label for="customerAccountSelector" style="min-width:220px;">Customer Account:</label>
+        <select id="customerAccountSelector" style="height:40px; width:450px; padding:8px 12px; border-radius:7px; border:1px solid #b8c5d6; background:#f7fafd; font-family:var(--font); font-size:1.04rem; box-sizing:border-box;">
+            <option value="">-- Select Customer Account --</option>
+        </select>
+        <button id="refreshCustomersBtn" style="background: #28a745; color: #fff; border-radius: 6px; border: none; padding: 9px 18px; font-weight: 600;">Refresh</button>
+    </div>
+    
+    <!-- Selected Customer Info Display -->
+    <div id="selectedCustomerInfo" style="display:none; background:#f7fafd; border-radius:8px; padding:16px; margin-bottom:16px; border-left:4px solid #0059b3;">
+        <div style="display:flex; gap:30px;">
+            <div style="flex:1;">
+                <div><strong>Name:</strong> <span id="displayCustomerName"></span></div>
+                <div><strong>Email:</strong> <span id="displayCustomerEmail"></span></div>
+                <div><strong>Phone:</strong> <span id="displayCustomerPhone"></span></div>
+            </div>
+            <div style="flex:1;">
+                <div><strong>Company:</strong> <span id="displayCustomerCompany"></span></div>
+                <div><strong>Address:</strong> <span id="displayCustomerAddress"></span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group" style="display:flex; gap:18px; align-items:center; margin-bottom:16px;">
+        <label for="projectNameNumber" style="min-width:220px;">Project Name & Number:</label>
+        <input type="text" id="projectNameNumber" name="projectNameNumber" placeholder="e.g., Conference Room Upgrade - PJ1001" style="height:40px; width:450px; padding:8px 12px; border-radius:7px; border:1px solid #b8c5d6; background:#f7fafd; font-family:var(--font); font-size:1.04rem; box-sizing:border-box;">
+    </div>
+    <div class="form-group" style="display:flex; gap:18px; align-items:center;">
+        <label for="quoteStatusSelector" style="min-width:220px;">Quote Status:</label>
+        <select id="quoteStatusSelector" style="height:40px;">
+            <option value="Draft">Draft</option>
+            <option value="SentToClient">Sent to Client</option>
+            <option value="Accepted">Accepted</option>
+            <option value="ChangesRequested">Changes Requested</option>
+            <option value="Archived">Archived</option>
+        </select>
+        <button id="updateStatusBtn" style="background: #0059b3; color: #fff; border-radius: 6px; border: none; padding: 9px 18px; font-weight: 600; margin-left:24px;">Update Status</button>
+    </div>
+</section>
 
                 <!-- Item Selection -->
                 <section id="item-selector" style="margin-bottom: 30px;">
