@@ -282,20 +282,7 @@ const mainTabs = [
 mainTabs.forEach(({ btn, page }) => {
   document.getElementById(btn).addEventListener("click", () => {
     // Special security for Customers tab
-    if (btn === "tabCustomersBtn") {
-      // Always show login modal when tab is clicked
-      document.getElementById("customersLoginEmail").value = "";
-      document.getElementById("customersLoginPassword").value = "";
-      document.getElementById("customersLoginError").style.display = "none";
-      const modal = document.getElementById("customersLoginModal");
-      modal.className = "modal-centered";
-      modal.style.display = "flex";
-      // Hide customers page if it's visible
-      document.getElementById("customers-page").style.display = "none";
-      // Deactivate tab
-      document.getElementById("tabCustomersBtn").classList.remove("active");
-      return; // Do not show the customers page until login
-    }
+    
     // Show the requested main section, hide others
     mainTabs.forEach(({ btn: b, page: p }) => {
       document.getElementById(b).classList.toggle("active", b === btn);
@@ -3016,18 +3003,6 @@ function resetCustomerModal() {
   window.selectedProjectName = "";
 }
 
-document.getElementById("tabCustomersBtn").onclick = function() {
-  document.getElementById("customersLoginEmail").value = "";
-  document.getElementById("customersLoginPassword").value = "";
-  document.getElementById("customersLoginError").style.display = "none";
-
-  const modal = document.getElementById("customersLoginModal");
-  modal.removeAttribute("hidden");
-  modal.style.display = "flex";
-  modal.style.visibility = "visible";
-  modal.style.opacity = "1";
-  modal.className = "modal-centered";
-};
 
 document.getElementById("customersModalLoginBtn").onclick = async function() {
   alert("Login handler START!");
