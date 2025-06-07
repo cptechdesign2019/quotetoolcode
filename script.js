@@ -3479,26 +3479,38 @@ document.getElementById("closeDeleteCustomerModalBtn").onclick = function() {
  };
 
 // --- Customers Tab: Always force login, then show customers table/info ---
-
-// Customers tab click: always show login modal
 document.getElementById("tabCustomersBtn").onclick = function() {
+  // Always show the login modal when Customers tab is clicked
   document.getElementById("customersLoginEmail").value = "";
   document.getElementById("customersLoginPassword").value = "";
   document.getElementById("customersLoginError").style.display = "none";
-  document.getElementById("customersLoginModal").style.display = "block";
+  const modal = document.getElementById("customersLoginModal");
+  modal.style.display = "flex";
+  modal.style.visibility = "visible";
+  modal.style.opacity = "1";
+  modal.className = "modal-centered";
+  // Hide customers page until login
+  document.getElementById("customers-page").style.display = "none";
+  document.getElementById("tabCustomersBtn").classList.remove("active");
 };
 
 // Cancel button on login modal
 document.getElementById("customersModalCancelBtn").onclick = function() {
-  document.getElementById("customersLoginModal").style.display = "none";
+  const modal = document.getElementById("customersLoginModal");
+  modal.style.display = "none";
 };
 
+// Login button in login modal
 document.getElementById("customersModalLoginBtn").onclick = async function() {
   const email = document.getElementById("customersLoginEmail").value.trim();
   const password = document.getElementById("customersLoginPassword").value;
   try {
     await firebase.auth().signInWithEmailAndPassword(email, password);
-    document.getElementById("customersLoginModal").style.display = "none";
+    // Hide modal - this is the only code that should hide it!
+    const modal = document.getElementById("customersLoginModal");
+    modal.style.display = "none";
+    modal.className = ""; // Remove modal-centered class if present
+
     // Show customers page and activate tab
     document.getElementById("customers-page").style.display = "";
     document.getElementById("tabCustomersBtn").classList.add("active");
