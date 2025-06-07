@@ -1075,12 +1075,17 @@ async function loadQuoteById(id) {
     // Restore customer selection
     if (q.customerId && q.customerInfo) {
       document.getElementById("customerAccountSelector").value = q.customerId;
-      window.selectedQuoteCustomer = {
-        id: docRef.id,
-        ...customerData
-    }; // Changed from selectedCustomerAccount
+      // **Set the selected customer with the new data and ID**
+window.selectedQuoteCustomer = {
+  id: docRef.id,
+  ...customerData
+};
 
-      updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
+// Update the customer selector dropdown
+await loadCustomerDropdown();
+document.getElementById("customerAccountSelector").value = docRef.id;
+updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
+
       document.getElementById("selectedCustomerInfo").style.display = "block";
     } else {
       document.getElementById("customerAccountSelector").value = "";
@@ -2326,12 +2331,13 @@ document.getElementById("customerSearchInput").oninput = async function() {
       matches.push({ id: doc.id, ...c });
     }
   });
-
+}
   matches.slice(0, 10).forEach(c => {
     const li = document.createElement("li");
     li.textContent = c.type === "commercial" && c.companyName
       ? `${c.companyName} (${c.firstName} ${c.lastName})`
       : `${c.firstName} ${c.lastName}`;
+  }
 li.onclick = function() {
   Array.from(resultsList.children).forEach(x => x.classList.remove("selected"));
   li.classList.add("selected");
@@ -2395,8 +2401,9 @@ document.getElementById("addCustomerForm").onsubmit = async function(e) {
       createdAt: new Date().toISOString()
     };
     
+    
     // Save to Firestore
-    const docRef = await db.collection("customers").add(customerData);
+    const docRef = await db.collection("customerAccounts").add(customerData);
     
     // **ADD THIS: Set the selected customer with the new data and ID**
     window.selectedCustomer = {
