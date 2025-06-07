@@ -1072,42 +1072,47 @@ function updateGrandTotals() {
 });
 
 
-
-
 document.getElementById("closeLoadQuoteSidebarBtn").onclick = function() {
   document.getElementById("loadQuoteSidebar").style.display = "none";
 };
 
 
-// Update the customer selector dropdown
-await loadCustomerDropdown();
-document.getElementById("customerAccountSelector").value = docRef.id;
-updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
-
-      document.getElementById("selectedCustomerInfo").style.display = "block";
-    } else {
-      document.getElementById("customerAccountSelector").value = "";
-      window.selectedQuoteCustomer = null;
-      document.getElementById("selectedCustomerInfo").style.display = "none";
-    }
-    
-    window.quoteItems = Array.isArray(q.quoteItems) ? q.quoteItems : [];
-    window.laborSections = Array.isArray(q.laborSections) ? q.laborSections : [];
-    
-    activeQuoteId = id;
-    activeTemplateId = null;
-    
-    renderQuoteTable();
-    renderLaborSections();
-    updateQuoteSummary();
-    updateGrandTotals();
-    
-    document.getElementById("loadQuoteSidebar").style.display = "none";
-    showNotification("Quote loaded.", "success");
-  } catch (e) {
-    showNotification("Failed to load quote.", "error");
-  }
+// Restore customer selection
+if (q.customerId && q.customerInfo) {
+  // Wait for customer dropdown to load first
+  await loadCustomerDropdown();
+  
+  // Set the customer data
+  window.selectedQuoteCustomer = {
+    id: q.customerId,
+    ...q.customerInfo
+  };
+  
+  // Set dropdown value
+  document.getElementById("customerAccountSelector").value = q.customerId;
+  
+  // Update display with the customer data
+  updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
+  
+  // Show customer info section
+  document.getElementById("selectedCustomerInfo").style.display = "block";
+} else {
+  // Clear customer selection
+  document.getElementById("customerAccountSelector").value = "";
+  window.selectedQuoteCustomer = null;
+  document.getElementById("selectedCustomerInfo").style.display = "none";
 }
+
+window.quoteItems = Array.isArray(q.quoteItems) ? q.quoteItems : [];
+window.laborSections = Array.isArray(q.laborSections) ? q.laborSections : [];
+
+renderQuoteTable();
+renderLaborSections();
+updateQuoteSummary();
+updateGrandTotals();
+
+document.getElementById("loadQuoteSidebar").style.display = "none";
+showNotification("Quote loaded.", "success");
 
 
 document.getElementById("saveQuoteBtn").onclick = saveQuote;
@@ -1717,7 +1722,7 @@ async function loadQuoteFromList(quoteId) {
     }
     
     // Load the quote
-    await loadQuote(quoteId);
+    await loadQuoteById(quoteId);
     
   } catch (error) {
     console.error("Error loading quote from list:", error);
