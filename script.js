@@ -1076,9 +1076,10 @@ async function loadQuoteById(id) {
     if (q.customerId && q.customerInfo) {
       document.getElementById("customerAccountSelector").value = q.customerId;
       window.selectedQuoteCustomer = {
-        id: q.customerId,
-        ...q.customerInfo
-      };
+        id: docRef.id,
+        ...customerData
+    }; // Changed from selectedCustomerAccount
+
       updateSelectedCustomerDisplay(window.selectedQuoteCustomer);
       document.getElementById("selectedCustomerInfo").style.display = "block";
     } else {
@@ -1692,7 +1693,7 @@ function initTinyMCE() {
       selector: "#sowFullOutputText",
       menubar: true,
       plugins: "lists link table autoresize code image charmap preview searchreplace advlist anchor insertdatetime media", // <--- no paste!
-      toolbar: "undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | fontselect fontsizeselect formatselect | forecolor backcolor | cut copy | bullist numlist outdent indent | link image media table | blockquote subscript superscript | removeformat | preview code",
+      toolbar: "undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | fontselect fontsizeselect formatselect | forecolor backcolor | cut copy | bullist numlist | outdent indent | link image | code preview",
       min_height: 300,
       max_height: 800,
       branding: false,
@@ -2210,9 +2211,6 @@ document.getElementById("importProductsCsvInput").addEventListener("change", fun
   e.target.value = "";
 });
 
-
-// ------------- INIT ON LOAD -------------
-// ------------- INIT ON LOAD -------------
 // ------------- INIT ON LOAD -------------
 window.onload = function() {
   updateFooterYear();
@@ -2243,7 +2241,7 @@ window.onload = function() {
 // --- Customer Account Modal Logic (matching new modal HTML & companyNameGroup logic) ---
 
 // Globals for customer workflow
-window.selectedCustomerAccount = null;
+window.selectedQuoteCustomer = c;
 window.newCustomerType = null;
 window.selectedProjectName = "";
 
@@ -2266,7 +2264,7 @@ function resetCustomerModal() {
   document.getElementById("customerProjectAddress").value = "";
   document.getElementById("companyNameGroup").style.display = "none"; // Hide by default
 
-  window.selectedCustomerAccount = null;
+  window.selectedQuoteCustomer = null; // Changed from selectedCustomerAccount
   window.newCustomerType = null;
   window.selectedProjectName = "";
 }
@@ -2334,17 +2332,15 @@ document.getElementById("customerSearchInput").oninput = async function() {
     li.textContent = c.type === "commercial" && c.companyName
       ? `${c.companyName} (${c.firstName} ${c.lastName})`
       : `${c.firstName} ${c.lastName}`;
-    li.onclick = function() {
-      Array.from(resultsList.children).forEach(x => x.classList.remove("selected"));
-      li.classList.add("selected");
-      window.selectedCustomerAccount = c;
-      // Move to project name step
-      document.getElementById("customerStep1").style.display = "none";
-      document.getElementById("customerStep3").style.display = "";
-      document.getElementById("projectNameInput").focus();
-    };
-    resultsList.appendChild(li);
-  });
+li.onclick = function() {
+  Array.from(resultsList.children).forEach(x => x.classList.remove("selected"));
+  li.classList.add("selected");
+  // CHANGE THIS LINE:
+  window.selectedQuoteCustomer = c; // Changed from selectedCustomerAccount
+  // Move to project name step
+  document.getElementById("customerStep1").style.display = "none";
+  document.getElementById("customerStep3").style.display = "";
+  document.getElementById("projectNameInput").focus();
 };
 
 // --- Step 1: Add new customer ---
@@ -2424,40 +2420,69 @@ document.getElementById("addCustomerForm").onsubmit = async function(e) {
 };
 // --- Step 3: Enter project name and create quote ---
 document.getElementById("createQuoteBtn").onclick = function() {
+  console.log("Create Quote button clicked!");
+  
   const projectName = document.getElementById("projectNameInput").value.trim();
+  console.log("Project name:", projectName);
+  console.log("Selected customer:", window.selectedQuoteCustomer); // Changed variable name
+  
+  // Validation
+  if (!window.selectedQuoteCustomer) { // Changed from selectedCustomerAccount
+    console.error("No customer selected");
+    alert("Error: No customer selected. Please go back and select a customer.");
+    return;
+  }
   
   if (!projectName) {
+    console.error("No project name entered");
     alert("Please enter a project name.");
+    document.getElementById("projectNameInput").focus();
     return;
   }
   
-  // Check if customer is selected
-  if (!window.selectedCustomer) {
-    alert("No customer selected. Please select a customer first.");
-    return;
+  console.log("Validation passed, creating quote...");
+  
+  try {
+    // Store the project name and customer info
+    window.selectedProjectName = projectName;
+    window.selectedQuoteCustomer = window.selectedQuoteCustomer; // Make sure it's consistent
+    
+    // Set the project name in the main quote builder
+    const projectNameField = document.getElementById("projectNameNumber");
+    if (projectNameField) {
+      projectNameField.value = projectName;
+      console.log("Set project name field to:", projectName);
+    }
+    
+    // Set customer in the quote builder dropdown if it exists
+    const customerDropdown = document.getElementById("customerAccountSelector");
+    if (customerDropdown && window.selectedQuoteCustomer) {
+      customerDropdown.value = window.selectedQuoteCustomer.id;
+      console.log("Set customer dropdown to:", window.selectedQuoteCustomer.id);
+      
+      // Trigger the customer selection handler
+      handleCustomerSelection();
+      console.log("Triggered customer selection handler");
+    }
+    
+    // Close the modal
+    document.getElementById("customerAccountModal").style.display = "none";
+    console.log("Closed modal");
+    
+    // Reset the modal for next time
+    resetCustomerModal();
+    console.log("Reset modal");
+    
+    // Show success notification
+    showNotification(`New quote created for ${projectName}!`, "success");
+    console.log("Showed notification");
+    
+    console.log("Quote creation completed successfully!");
+    
+  } catch (error) {
+    console.error("Error creating quote:", error);
+    alert("Error creating quote: " + error.message);
   }
-  
-  // Set project info
-  document.getElementById("projectNameNumber").value = projectName;
-  
-  // Clear quote data for new quote
-  window.quoteItems = [];
-  window.laborItems = [
-    { name: "Basic Install", numTechs: 2, numTechDays: 1, numSubs: 0, numSubDays: 0, clientRate: 150, techAssignments: [], subAssignments: [] }
-  ];
-  
-  // Update displays
-  renderQuoteTable();
-  renderLaborSections();
-  updateQuoteSummary();
-  updateLaborSummary();
-  updateGrandTotals();
-  
-  // Close modal and switch to quote builder
-  closeCustomerModal();
-  showMainTab("quote-builder");
-  
-  showNotification("New quote created successfully!", "success");
 };
 
 // ----------- LOAD AND RENDER CUSTOMERS TABLE -----------
@@ -2633,71 +2658,61 @@ document.getElementById("customersModalLoginBtn").onclick = async function() {
 let billingAddressAutocomplete = null;
 
 function initAutocomplete() {
+  // Check if Google Maps is loaded
+  if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
+    console.log("Google Maps Places API not yet loaded");
+    return;
+  }
+
   // Initialize autocomplete for billing address
   const billingAddressInput = document.getElementById("customerBillingAddress");
   
   if (billingAddressInput) {
-    billingAddressAutocomplete = new google.maps.places.Autocomplete(billingAddressInput, {
-      types: ['address'],
-      componentRestrictions: { country: 'us' }, // Restrict to US addresses
-      fields: ['formatted_address', 'address_components', 'geometry']
-    });
-    
-    // Listen for place selection
-    billingAddressAutocomplete.addListener('place_changed', function() {
-      const place = billingAddressAutocomplete.getPlace();
+    try {
+      const billingAddressAutocomplete = new google.maps.places.Autocomplete(billingAddressInput, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        fields: ['formatted_address', 'address_components', 'geometry']
+      });
       
-      if (place.formatted_address) {
-        billingAddressInput.value = place.formatted_address;
-      }
-    });
+      billingAddressAutocomplete.addListener('place_changed', function() {
+        const place = billingAddressAutocomplete.getPlace();
+        if (place.formatted_address) {
+          billingAddressInput.value = place.formatted_address;
+        }
+      });
+    } catch (error) {
+      console.log("Error initializing billing address autocomplete:", error);
+    }
   }
   
   // Initialize for edit customer modal too
   const editBillingAddressInput = document.getElementById("editCustomerBillingAddress");
   
   if (editBillingAddressInput) {
-    const editBillingAutocomplete = new google.maps.places.Autocomplete(editBillingAddressInput, {
-      types: ['address'],
-      componentRestrictions: { country: 'us' },
-      fields: ['formatted_address', 'address_components', 'geometry']
-    });
-    
-    editBillingAutocomplete.addListener('place_changed', function() {
-      const place = editBillingAutocomplete.getPlace();
+    try {
+      const editBillingAutocomplete = new google.maps.places.Autocomplete(editBillingAddressInput, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        fields: ['formatted_address', 'address_components', 'geometry']
+      });
       
-      if (place.formatted_address) {
-        editBillingAddressInput.value = place.formatted_address;
-      }
-    });
+      editBillingAutocomplete.addListener('place_changed', function() {
+        const place = editBillingAutocomplete.getPlace();
+        if (place.formatted_address) {
+          editBillingAddressInput.value = place.formatted_address;
+        }
+      });
+    } catch (error) {
+      console.log("Error initializing edit billing address autocomplete:", error);
+    }
   }
+
+  console.log("Google Maps Places autocomplete initialized successfully");
 }
 
-// Fallback initialization if Google Maps doesn't load
+// Make sure it's available globally
 window.initAutocomplete = initAutocomplete;
-
-// Initialize autocomplete when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-  // Check if Google Maps is available
-  if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-    initAutocomplete();
-  } else {
-    // If Google Maps isn't loaded yet, wait for it
-    let checkGoogleMaps = setInterval(function() {
-      if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-        clearInterval(checkGoogleMaps);
-        initAutocomplete();
-      }
-    }, 100);
-    
-    // Stop checking after 10 seconds
-    setTimeout(function() {
-      clearInterval(checkGoogleMaps);
-    }, 10000);
-  }
-});
-
-
 // Add modal close handlers
 document.getElementById("closeCustomerModalBtn").onclick = function() {
   document.getElementById("customerAccountModal").style.display = "none";
@@ -2765,13 +2780,13 @@ function handleCustomerSelection() {
   
   if (!selectedOption.value) {
     customerInfo.style.display = "none";
-    window.activeCustomerForQuote = null;
+    window.selectedQuoteCustomer = null;
     return;
   }
   
   try {
     const customer = JSON.parse(selectedOption.dataset.customerData);
-    window.activeCustomerForQuote = customer;
+    window.selectedQuoteCustomer = customer;
     
     // Populate display fields
     document.getElementById("displayCustomerName").textContent = `${customer.firstName} ${customer.lastName}`;
