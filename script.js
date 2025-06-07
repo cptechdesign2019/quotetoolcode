@@ -2213,6 +2213,7 @@ document.getElementById("importProductsCsvInput").addEventListener("change", fun
 
 // ------------- INIT ON LOAD -------------
 // ------------- INIT ON LOAD -------------
+// ------------- INIT ON LOAD -------------
 window.onload = function() {
   updateFooterYear();
   initTinyMCE();
@@ -2375,6 +2376,8 @@ function showCustomerForm() {
   }
 }
 
+// --- Step 2: Save new customer form ---
+document.getElementById("addCustomerForm").onsubmit = async function(e) {
 // --- Step 2: Save new customer form ---
 document.getElementById("addCustomerForm").onsubmit = async function(e) {
   e.preventDefault();
@@ -2758,6 +2761,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// Add modal close handlers
 // Add modal close handlers
 document.getElementById("closeCustomerModalBtn").onclick = function() {
   document.getElementById("customerAccountModal").style.display = "none";
