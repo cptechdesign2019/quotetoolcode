@@ -242,9 +242,11 @@ function updateItemPreview() {
     document.getElementById("item-preview-map").innerText = "";
     document.getElementById("item-preview-cost").innerText = "";
     document.getElementById("item-preview-specsheet").href = "#";
+    document.getElementById("item-preview-specsheet").style.display = "none";
     document.getElementById("item-preview-img").src = "placeholderlogoimage.png";
     return;
   }
+  
   document.getElementById("item-preview-name").innerText = p.productName || "";
   document.getElementById("item-preview-number").innerText = p.productNumber || "";
   document.getElementById("item-preview-brand").innerText = p.brand || "";
@@ -254,8 +256,38 @@ function updateItemPreview() {
   document.getElementById("item-preview-msrp").innerText = (typeof p.msrp === "number" ? `$${p.msrp.toFixed(2)}` : "");
   document.getElementById("item-preview-map").innerText = (typeof p.map === "number" ? `$${p.map.toFixed(2)}` : "");
   document.getElementById("item-preview-cost").innerText = (typeof p.costPrice === "number" ? `$${p.costPrice.toFixed(2)}` : "");
-  document.getElementById("item-preview-specsheet").href = p.specSheetURL || "#";
-  document.getElementById("item-preview-img").src = p.imageURL || "placeholderlogoimage.png";
+  
+  // Handle spec sheet link
+  const specSheetLink = document.getElementById("item-preview-specsheet");
+  if (p.specSheetURL && p.specSheetURL.trim() && p.specSheetURL.trim() !== "#") {
+    specSheetLink.href = p.specSheetURL.trim();
+    specSheetLink.style.display = "inline";
+  } else if (p.specSheetUrl && p.specSheetUrl.trim() && p.specSheetUrl.trim() !== "#") {
+    // Check for alternative field name
+    specSheetLink.href = p.specSheetUrl.trim();
+    specSheetLink.style.display = "inline";
+  } else {
+    specSheetLink.href = "#";
+    specSheetLink.style.display = "none";
+  }
+  
+  // Handle image
+  const imgElement = document.getElementById("item-preview-img");
+  if (p.imageURL && p.imageURL.trim()) {
+    imgElement.src = p.imageURL.trim();
+    imgElement.onerror = function() {
+      // If image fails to load, show placeholder
+      this.src = "placeholderlogoimage.png";
+    };
+  } else if (p.imageUrl && p.imageUrl.trim()) {
+    // Check for alternative field name
+    imgElement.src = p.imageUrl.trim();
+    imgElement.onerror = function() {
+      this.src = "placeholderlogoimage.png";
+    };
+  } else {
+    imgElement.src = "placeholderlogoimage.png";
+  }
 }
 
 // ------------- QUOTE LOGIC -------------
@@ -302,8 +334,9 @@ tbody.innerHTML = window.quoteItems.map((item, idx) => `
   <tr data-idx="${idx}">
     <td class="col-drag"><span class="drag-handle" style="cursor: grab;">☰</span></td>
     <td class="col-image">
-      <img src="${item.imageURL || 'placeholderlogoimage.png'}" 
-           alt="${item.productName || ''}">
+      <img src="${item.imageURL || item.imageUrl || 'placeholderlogoimage.png'}" 
+           alt="${item.productName || ''}"
+           onerror="this.src='placeholderlogoimage.png'">
     </td>
     <td class="col-product-name">${item.productName || ""}</td>
     <td class="col-product-number">${item.productNumber || ""}</td>
@@ -546,73 +579,85 @@ function renderLaborSections() {
 
     let cardContent = '';
 
-if (isPrewireOrInstall) {
-      // THIS IS THE OLD STRUCTURE WITH THE SUMMARY OUTSIDE THE GRID
+    if (isPrewireOrInstall) {
+      // Use consistent layout for prewire/installation sections with subcontractors
       cardContent = `
-        <div class="labor-card-grid">
-            <div class="labor-col internal-tech-col">
+        <div class="labor-card-content-wrapper">
+          <div class="labor-card-main-content">
+            <div class="labor-card-grid">
+              <div class="labor-col internal-tech-col">
                 <label>Internal Technicians</label>
                 <input type="number" min="0" max="10" value="${section.numTechs}" step="1" class="labor-input-small" onchange="setNumTechs(${idx}, this.value)">
                 <div class="tech-selectors">${techSelectors}</div>
-            </div>
-            <div class="labor-col days-tech-col">
+              </div>
+              <div class="labor-col days-tech-col">
                 <label>Days Per Tech</label>
                 <input type="number" min="0" step="1" value="${section.numTechDays}" class="labor-input-small" onchange="setNumTechDays(${idx}, this.value)">
-            </div>
-            <div class="labor-col rate-col">
+              </div>
+              <div class="labor-col rate-col">
                 <label>Client Rate (per Man-Hour)</label>
                 <input type="number" min="0" step="0.01" value="${section.clientRate}" class="labor-input-small" onchange="setClientRate(${idx}, this.value)">
-            </div>
-
-            <div class="subcontractor-group">
+              </div>
+              <div class="subcontractor-group">
                 <div class="labor-col subs-col">
-                    <label>Subcontractors</label>
-                    <input type="number" min="0" max="10" value="${section.numSubs}" step="1" class="labor-input-small" onchange="setNumSubs(${idx}, this.value)">
-                    <div class="sub-selectors">${subSelectors}</div>
+                  <label>Subcontractors</label>
+                  <input type="number" min="0" max="10" value="${section.numSubs}" step="1" class="labor-input-small" onchange="setNumSubs(${idx}, this.value)">
+                  <div class="sub-selectors">${subSelectors}</div>
                 </div>
                 <div class="labor-col days-sub-col">
-                    <label>Days (Subs)</label>
-                    <input type="number" min="0" step="1" value="${section.numSubDays}" class="labor-input-small" onchange="setNumSubDays(${idx}, this.value)">
+                  <label>Days (Subs)</label>
+                  <input type="number" min="0" step="1" value="${section.numSubDays}" class="labor-input-small" onchange="setNumSubDays(${idx}, this.value)">
                 </div>
+              </div>
             </div>
+          </div>
+          <div class="labor-card-summary-container">
+            <div class="labor-card-summary">
+              <table class="summary-table-small">
+                <tbody>
+                  <tr><td>Total Man-Hours:</td><td id="labor-manhrs-${idx}">${(section.manHours||0).toFixed(1)}</td></tr>
+                  <tr><td>Total Client Cost:</td><td id="labor-clientcost-${idx}">$${(section.clientCost||0).toFixed(2)}</td></tr>
+                  <tr><td>Total Company Cost:</td><td id="labor-companycost-${idx}">$${(section.companyCost||0).toFixed(2)}</td></tr>
+                  <tr><td>Gross Profit Margin:</td><td id="labor-gpm-${idx}">${(section.gpm||0).toFixed(1)}%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="labor-card-summary">
-                <table class="summary-table-small">
-                    <tbody>
-                        <tr><td>Total Man-Hours:</td><td id="labor-manhrs-${idx}">${(section.manHours||0).toFixed(1)}</td></tr>
-                        <tr><td>Total Client Cost:</td><td id="labor-clientcost-${idx}">$${(section.clientCost||0).toFixed(2)}</td></tr>
-                        <tr><td>Total Company Cost:</td><td id="labor-companycost-${idx}">$${(section.companyCost||0).toFixed(2)}</td></tr>
-                        <tr><td>Gross Profit Margin:</td><td id="labor-gpm-${idx}">${(section.gpm||0).toFixed(1)}%</td></tr>
-                    </tbody>
-                </table>
-            </div>
       `;
     } else {
+      // Use consistent layout for non-subcontractor sections
       cardContent = `
-        <div class="labor-card-flexrows">
-          <div class="labor-col">
-            <label>Internal Technicians</label>
-            <input type="number" min="0" max="10" value="${section.numTechs}" step="1"
-              class="labor-input-small" onchange="setNumTechs(${idx}, this.value)">
-            <div class="tech-selectors">${techSelectors}</div>
+        <div class="labor-card-content-wrapper">
+          <div class="labor-card-main-content">
+            <div class="labor-card-flexrows">
+              <div class="labor-col">
+                <label>Internal Technicians</label>
+                <input type="number" min="0" max="10" value="${section.numTechs}" step="1"
+                  class="labor-input-small" onchange="setNumTechs(${idx}, this.value)">
+                <div class="tech-selectors">${techSelectors}</div>
+              </div>
+              <div class="labor-col">
+                <label>Days Per Tech</label>
+                <input type="number" min="0" step="1" value="${section.numTechDays}" class="labor-input-small" onchange="setNumTechDays(${idx}, this.value)">
+              </div>
+              <div class="labor-col">
+                <label>Client Rate (per Man-Hour)</label>
+                <input type="number" min="0" step="0.01" value="${section.clientRate}" class="labor-input-small" onchange="setClientRate(${idx}, this.value)">
+              </div>
+            </div>
           </div>
-          <div class="labor-col">
-            <label>Days Per Tech</label>
-            <input type="number" min="0" step="1" value="${section.numTechDays}" class="labor-input-small" onchange="setNumTechDays(${idx}, this.value)">
-          </div>
-          <div class="labor-col">
-            <label>Client Rate (per Man-Hour)</label>
-            <input type="number" min="0" step="0.01" value="${section.clientRate}" class="labor-input-small" onchange="setClientRate(${idx}, this.value)">
-          </div>
-          <div class="labor-card-summary">
-            <table class="summary-table-small">
+          <div class="labor-card-summary-container">
+            <div class="labor-card-summary">
+              <table class="summary-table-small">
                 <tbody>
-                    <tr><td>Total Man-Hours:</td><td id="labor-manhrs-${idx}">${(section.manHours||0).toFixed(1)}</td></tr>
-                    <tr><td>Total Client Cost:</td><td id="labor-clientcost-${idx}">$${(section.clientCost||0).toFixed(2)}</td></tr>
-                    <tr><td>Total Company Cost:</td><td id="labor-companycost-${idx}">${(section.companyCost||0).toFixed(2)}</td></tr>
-                    <tr><td>Gross Profit Margin:</td><td id="labor-gpm-${idx}">${(section.gpm||0).toFixed(1)}%</td></tr>
+                  <tr><td>Total Man-Hours:</td><td id="labor-manhrs-${idx}">${(section.manHours||0).toFixed(1)}</td></tr>
+                  <tr><td>Total Client Cost:</td><td id="labor-clientcost-${idx}">$${(section.clientCost||0).toFixed(2)}</td></tr>
+                  <tr><td>Total Company Cost:</td><td id="labor-companycost-${idx}">$${(section.companyCost||0).toFixed(2)}</td></tr>
+                  <tr><td>Gross Profit Margin:</td><td id="labor-gpm-${idx}">${(section.gpm||0).toFixed(1)}%</td></tr>
                 </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
       `;
@@ -1085,9 +1130,366 @@ function showNotification(msg, type="success") {
 document.getElementById("printQuoteBtn").onclick = function() {
   window.print();
 };
-document.getElementById("downloadPdfBtn").onclick = function() {
-  alert("Download PDF coming soon!");
+document.getElementById("downloadPdfBtn").onclick = async function() {
+  try {
+    // Get current data
+    const projectName = document.getElementById("projectNameNumber").value.trim() || "Untitled Project";
+    const currentDate = new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    }).replace(/\//g, '-');
+    
+    // Create filename
+    const filename = `CP - ${projectName} - ${currentDate}.pdf`;
+    
+    // Calculate totals
+    const equipmentTotal = (window.quoteItems || []).reduce((sum, item) => 
+      sum + ((item.sellPrice || 0) * (item.qty || 1)), 0
+    );
+    
+    const laborSections = window.laborSections || [];
+    const laborTotal = laborSections.reduce((sum, section) => sum + (section.clientCost || 0), 0);
+    
+    const discountPct = parseFloat(document.getElementById("discountPercent")?.value) || 0;
+    const shippingPct = parseFloat(document.getElementById("shippingPercent")?.value) || 0;
+    const salesTaxPct = parseFloat(document.getElementById("salesTaxPercent")?.value) || 0;
+    
+    const combinedSubtotal = equipmentTotal + laborTotal;
+    const discountAmount = combinedSubtotal * discountPct / 100;
+    const subtotalAfterDiscount = combinedSubtotal - discountAmount;
+    const shippingAmount = equipmentTotal * shippingPct / 100;
+    const salesTaxAmount = subtotalAfterDiscount * salesTaxPct / 100;
+    const finalTotal = subtotalAfterDiscount + shippingAmount + salesTaxAmount;
+
+    // Create PDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    let yPosition = 25;
+    
+    // Header Section Box
+    doc.setFillColor(240, 245, 250); // Very light blue background
+    doc.rect(15, 15, 180, 55, 'F');
+    doc.setDrawColor(22, 41, 68); // #162944
+    doc.setLineWidth(0.5);
+    doc.rect(15, 15, 180, 55, 'S');
+    
+    // Company Logo
+    try {
+      const logoImg = await loadImageAsBase64('cpheaderlogo.png');
+      doc.addImage(logoImg, 'PNG', 20, 20, 35, 18);
+    } catch (e) {
+      console.log("Logo loading failed, continuing without logo");
+    }
+    
+    // Project Name (prominent)
+    doc.setTextColor(22, 41, 68); // #162944
+    doc.setFontSize(16);
+    doc.setFont("times", "bold");
+    doc.text("PROJECT:", 20, 45);
+    doc.setFont("times", "normal");
+    doc.text(projectName, 50, 45);
+    
+    // Company Information (smaller, right side)
+    doc.setFontSize(9);
+    doc.setFont("times", "bold");
+    doc.text("Clearpoint Technology + Design", 125, 25);
+    doc.setFont("times", "normal");
+    doc.setFontSize(8);
+    doc.text("285 Old County Line Road, STE B", 125, 30);
+    doc.text("Westerville, OH 43081", 125, 34);
+    doc.text("740-936-7767", 125, 38);
+    
+    // Customer Information (if available)
+    if (window.activeCustomerForQuote) {
+      const customer = window.activeCustomerForQuote;
+      doc.setFontSize(10);
+      doc.setFont("times", "bold");
+      doc.text("CLIENT:", 125, 48);
+      doc.setFont("times", "normal");
+      doc.setFontSize(9);
+      const customerName = customer.type === "commercial" && customer.companyName 
+        ? `${customer.companyName}`
+        : `${customer.firstName} ${customer.lastName}`;
+      doc.text(customerName, 125, 53);
+      
+      if (customer.type === "commercial" && customer.companyName) {
+        doc.text(`${customer.firstName} ${customer.lastName}`, 125, 57);
+      }
+      
+      if (customer.email && yPosition < 65) {
+        doc.text(customer.email, 125, 61);
+      }
+      if (customer.phone && yPosition < 65) {
+        doc.text(customer.phone, 125, 65);
+      }
+    }
+    
+    yPosition = 85;
+    
+    // Equipment Table
+    if (window.quoteItems && window.quoteItems.length > 0) {
+      doc.setTextColor(22, 41, 68);
+      doc.setFont("times", "bold");
+      doc.setFontSize(14);
+      doc.text("EQUIPMENT", 20, yPosition);
+      yPosition += 8;
+      
+      // Prepare table data with images
+      const equipmentTableData = [];
+      
+      // Process items and load images
+      for (let i = 0; i < window.quoteItems.length; i++) {
+        const item = window.quoteItems[i];
+        const productName = (item.productName || '').substring(0, 30);
+        const description = (item.description || '').substring(0, 35);
+        const qty = item.qty || 1;
+        const price = `$${(item.sellPrice || 0).toFixed(2)}`;
+        const lineTotal = `$${((item.sellPrice || 0) * qty).toFixed(2)}`;
+        
+        let imageData = null;
+        try {
+          if (item.imageURL || item.imageUrl) {
+            imageData = await loadImageAsBase64(item.imageURL || item.imageUrl);
+          }
+        } catch (e) {
+          console.log(`Failed to load image for item ${i}`);
+        }
+        
+        equipmentTableData.push({
+          image: imageData,
+          productName,
+          description,
+          qty: qty.toString(),
+          price,
+          lineTotal
+        });
+      }
+      
+      // Create custom table with images
+      doc.autoTable({
+        head: [['Image', 'Product Name', 'Description', 'Qty', 'Price', 'Total']],
+        body: equipmentTableData.map(item => [
+          '', // Placeholder for image
+          item.productName,
+          item.description,
+          item.qty,
+          item.price,
+          item.lineTotal
+        ]),
+        startY: yPosition,
+        margin: { left: 20, right: 20 },
+        styles: { 
+          fontSize: 9,
+          font: 'times',
+          textColor: [22, 41, 68],
+          halign: 'left',
+          valign: 'middle'
+        },
+        headStyles: { 
+          fillColor: [22, 41, 68],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          valign: 'middle'
+        },
+        columnStyles: {
+          0: { cellWidth: 20, halign: 'center' }, // Image column
+          1: { cellWidth: 35 }, // Product name
+          2: { cellWidth: 45 }, // Description
+          3: { cellWidth: 15, halign: 'center', valign: 'middle' }, // Qty
+          4: { cellWidth: 25, halign: 'center', valign: 'middle' }, // Price
+          5: { cellWidth: 25, halign: 'center', valign: 'middle' }  // Total
+        },
+        didDrawCell: function (data) {
+          // Add images to the first column
+          if (data.column.index === 0 && data.section === 'body') {
+            const item = equipmentTableData[data.row.index];
+            if (item && item.image) {
+              try {
+                const cellX = data.cell.x + 2;
+                const cellY = data.cell.y + 2;
+                const imgSize = Math.min(data.cell.height - 4, 16);
+                doc.addImage(item.image, 'PNG', cellX, cellY, imgSize, imgSize);
+              } catch (e) {
+                console.log('Error adding image to PDF:', e);
+              }
+            }
+          }
+        }
+      });
+      
+      // Equipment total
+      const finalY = doc.lastAutoTable.finalY + 5;
+      doc.setFont("times", "bold");
+      doc.setFontSize(10);
+      doc.text("Equipment Total:", 140, finalY);
+      doc.text(`$${equipmentTotal.toFixed(2)}`, 170, finalY);
+      
+      yPosition = finalY + 15;
+    }
+    
+    // Labor Section
+    if (laborSections && laborSections.some(section => section.clientCost > 0)) {
+      doc.setTextColor(22, 41, 68);
+      doc.setFont("times", "bold");
+      doc.setFontSize(14);
+      doc.text("LABOR", 20, yPosition);
+      yPosition += 8;
+      
+      const laborTableData = [];
+      
+      laborSections.forEach(section => {
+        if (section.clientCost > 0) {
+          laborTableData.push([section.label, `$${section.clientCost.toFixed(2)}`]);
+        }
+      });
+      
+      doc.autoTable({
+        head: [['Service', 'Cost']],
+        body: laborTableData,
+        startY: yPosition,
+        margin: { left: 20, right: 20 },
+        styles: { 
+          fontSize: 9,
+          font: 'times',
+          textColor: [22, 41, 68],
+          valign: 'middle'
+        },
+        headStyles: { 
+          fillColor: [22, 41, 68],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          valign: 'middle'
+        },
+        columnStyles: {
+          0: { cellWidth: 120 },
+          1: { cellWidth: 40, halign: 'center', valign: 'middle' }
+        }
+      });
+      
+      // Labor total
+      const finalY = doc.lastAutoTable.finalY + 5;
+      doc.setFont("times", "bold");
+      doc.setFontSize(10);
+      doc.text("Labor Total:", 140, finalY);
+      doc.text(`$${laborTotal.toFixed(2)}`, 170, finalY);
+      
+      yPosition = finalY + 15;
+    }
+    
+    // Grand Totals Section
+    doc.setTextColor(22, 41, 68);
+    doc.setFont("times", "bold");
+    doc.setFontSize(14);
+    doc.text("QUOTE SUMMARY", 20, yPosition);
+    yPosition += 8;
+    
+    const totalsData = [];
+    totalsData.push(['Equipment Subtotal', `$${equipmentTotal.toFixed(2)}`]);
+    totalsData.push(['Labor Subtotal', `$${laborTotal.toFixed(2)}`]);
+    totalsData.push(['Combined Subtotal', `$${combinedSubtotal.toFixed(2)}`]);
+    
+    // Only show discount if there is one
+    if (discountPct > 0) {
+      totalsData.push([`Discount (${discountPct}%)`, `-$${discountAmount.toFixed(2)}`]);
+      totalsData.push(['Subtotal After Discount', `$${subtotalAfterDiscount.toFixed(2)}`]);
+    }
+    
+    if (shippingAmount > 0) {
+      totalsData.push([`Shipping (${shippingPct}%)`, `$${shippingAmount.toFixed(2)}`]);
+    }
+    
+    if (salesTaxAmount > 0) {
+      totalsData.push([`Sales Tax (${salesTaxPct}%)`, `$${salesTaxAmount.toFixed(2)}`]);
+    }
+    
+    doc.autoTable({
+      body: totalsData,
+      startY: yPosition,
+      margin: { left: 20, right: 20 },
+      styles: { 
+        fontSize: 10,
+        font: 'times',
+        textColor: [22, 41, 68],
+        valign: 'middle'
+      },
+      columnStyles: {
+        0: { cellWidth: 120, fontStyle: 'bold' },
+        1: { cellWidth: 40, halign: 'center', valign: 'middle', fontStyle: 'bold' }
+      }
+    });
+    
+    // Final Total (prominent)
+    const finalY = doc.lastAutoTable.finalY + 8;
+    doc.setFillColor(22, 41, 68);
+    doc.rect(20, finalY - 5, 160, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("times", "bold");
+    doc.setFontSize(12);
+    doc.text("TOTAL QUOTE AMOUNT:", 25, finalY + 2);
+    doc.text(`$${finalTotal.toFixed(2)}`, 150, finalY + 2);
+    
+    yPosition = finalY + 25;
+    
+    // Validity Notice
+    doc.setTextColor(22, 41, 68);
+    doc.setFontSize(9);
+    doc.setFont("times", "italic");
+    doc.text("This quote is valid for 30 days unless specified in writing otherwise.", 20, yPosition);
+    
+    // Save the PDF
+    doc.save(filename);
+    
+  } catch (error) {
+    console.error("PDF generation error:", error);
+    alert("Error generating PDF. Please try again.");
+  }
 };
+
+// Updated helper function to load image as base64
+function loadImageAsBase64(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const dataURL = canvas.toDataURL('image/png');
+        resolve(dataURL);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+// Helper function to load image as base64
+function loadImageAsBase64(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const dataURL = canvas.toDataURL('image/png');
+      resolve(dataURL);
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
 // ------------- SCOPE OF WORK (AI PAGE) -------------
 
